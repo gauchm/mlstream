@@ -1,7 +1,8 @@
 from setuptools import setup
+from os import path
 
 def readme():
-    with open('README.md') as f:
+    with open(path.dirname(path.realpath(__file__)) + '/README.md') as f:
         return f.read()
 
 setup(name='mlstream',
