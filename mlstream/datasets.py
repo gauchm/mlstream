@@ -43,8 +43,8 @@ class LumpedBasin(Dataset):
     db_path : str, optional
         Path to sqlite3 database file containing the catchment characteristics, by default None
     scalers : Tuple[InputScaler, OutputScaler, Dict[str, StaticAttributeScaler]], optional
-        Scalers to normalize and resale input, output, and static variables. If not provided, 
-        the scalers will be initialized at runtime, which will result in poor performance if 
+        Scalers to normalize and resale input, output, and static variables. If not provided,
+        the scalers will be initialized at runtime, which will result in poor performance if
         many datasets are created. Instead, it makes sense to re-use the scalers across datasets.
     """
 
@@ -59,7 +59,7 @@ class LumpedBasin(Dataset):
                  with_attributes: bool = False,
                  concat_static: bool = False,
                  db_path: str = None,
-                 scalers: Tuple[InputScaler, OutputScaler, 
+                 scalers: Tuple[InputScaler, OutputScaler,
                                 Dict[str, StaticAttributeScaler]] = None):
         self.data_root = data_root
         self.basin = basin
@@ -299,7 +299,7 @@ class LumpedH5(Dataset):
         self.attribute_scalers = {}
         for feature in [f for f in df.columns if 'onehot' not in f]:
             self.attribute_scalers[feature] = \
-                    StaticAttributeScaler(self.db_path, self.basins, feature)
+                StaticAttributeScaler(self.db_path, self.basins, feature)
             df[feature] = self.attribute_scalers[feature].scale(df[feature])
 
         # store attribute names

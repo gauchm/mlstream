@@ -10,10 +10,8 @@ import torch
 
 from .datasets import LumpedBasin, LumpedH5
 from .scaling import InputScaler, OutputScaler, StaticAttributeScaler
-from .utils import store_results, setup_run, prepare_data
+from .utils import setup_run, prepare_data
 from .datautils import load_static_attributes
-from .models.linear_models import LumpedLinearRegression
-from .models.lstm import LumpedLSTM
 
 
 class Experiment:
@@ -21,12 +19,12 @@ class Experiment:
     def __init__(self, data_root: Path, is_train: bool, run_dir: Path,
                  start_date: str = None, end_date: str = None,
                  basins: List = None, forcing_attributes: List = None,
-                 static_attributes: List = None, seq_length: int = 10, 
+                 static_attributes: List = None, seq_length: int = 10,
                  concat_static: bool = False, no_static: bool = False,
                  cache_data: bool = False, n_jobs: int = 1, seed: int = 0,
                  run_metadata: Dict = {}):
         """Initializes the experiment.
-        
+
         Parameters
         ----------
         data_root : Path
@@ -36,13 +34,13 @@ class Experiment:
         run_dir: Path
             Path to store experiment results in.
         start_date : str, optional
-            Start date (training start date if `is_train`, else 
+            Start date (training start date if `is_train`, else
             validation start date, ddmmyyyy)
         end_date : str, optional
-            End date (training end date if `is_train`, else 
+            End date (training end date if `is_train`, else
             validation end date, ddmmyyyy)
         basins : List, optional
-            List of basins to use during training, 
+            List of basins to use during training,
             or basins to predict during prediction.
         forcing_attributes : List, optional
             Names of forcing attributes to use.
@@ -114,10 +112,9 @@ class Experiment:
 
         self.model.train(ds)
 
-
     def predict(self) -> Dict:
-        """Generates predictions with a trained model. 
-        
+        """Generates predictions with a trained model.
+
         Returns
         -------
         results : Dict
@@ -129,7 +126,7 @@ class Experiment:
         if self.model is None:
             raise AttributeError("Model is not set.")
 
-        # self.cfg["start_date"] contains validation start date, 
+        # self.cfg["start_date"] contains validation start date,
         # run_cfg["start_date"] the training start date
         run_cfg["start_date"] = pd.to_datetime(run_cfg["start_date"], format='%d%m%Y')
         run_cfg["end_date"] = pd.to_datetime(run_cfg["end_date"], format='%d%m%Y')
@@ -145,11 +142,10 @@ class Experiment:
         db_path = self.cfg["run_dir"] / "static_attributes.db"
         df = load_static_attributes(db_path, run_cfg["basins"], drop_lat_lon=True)
         for feature in [f for f in df.columns if 'onehot' not in f]:
-            static_scalers[feature] = StaticAttributeScaler(db_path, run_cfg["basins"], 
+            static_scalers[feature] = StaticAttributeScaler(db_path, run_cfg["basins"],
                                                             feature)
 
         # self.cfg["basins"] contains the test basins, run_cfg["basins"] the train basins.
-
         results = {}
         for basin in tqdm(self.cfg["basins"]):
             ds_test = LumpedBasin(data_root=Path(self.cfg["data_root"]),
@@ -167,12 +163,12 @@ class Experiment:
             preds, obs = self.predict_basin(ds_test)
 
             date_range = pd.date_range(start=self.cfg["start_date"], end=self.cfg["end_date"])
-            df = pd.DataFrame(data={'qobs': obs.flatten(), 'qsim': preds.flatten()}, index=date_range)
+            df = pd.DataFrame(data={'qobs': obs.flatten(), 'qsim': preds.flatten()},
+                              index=date_range)
 
             results[basin] = df
 
         return results
-
 
     def predict_basin(self, ds: LumpedBasin) -> Tuple[np.ndarray, np.ndarray]:
         """Predicts a single basin.

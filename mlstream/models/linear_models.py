@@ -30,11 +30,11 @@ class LumpedLinearRegression(LumpedModel):
         # Create train/val sets
         loader = DataLoader(ds, batch_size=len(ds), num_workers=self.n_jobs)
         data = next(iter(loader))
-        
+
         # don't use static variables
         if len(data) == 3:
             x, y, _ = data  # ignore q_stds
-        
+
         # this shouldn't happen since we raise an exception if concat_static is False.
         else:
             raise ValueError("Linear regression has to use concat_static.")

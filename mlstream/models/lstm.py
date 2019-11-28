@@ -1,10 +1,9 @@
 """
-Large parts of this implementation are taken over from https://github.com/kratzert/ealstm_regional_modeling.
+Large parts of this implementation are taken over from
+https://github.com/kratzert/ealstm_regional_modeling.
 """
 
-
 import sys
-import pickle
 from pathlib import Path
 from typing import Tuple, Dict
 
@@ -12,6 +11,7 @@ import numpy as np
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 from ..datasets import LumpedBasin, LumpedH5
 from .base_models import LumpedModel
@@ -26,9 +26,9 @@ torch.backends.cudnn.benchmark = False
 class LumpedLSTM(LumpedModel):
     """(EA-)LSTM model for lumped data. """
 
-    def __init__(self, num_dynamic_vars, num_static_vars, use_mse: bool = True, 
-                 no_static: bool = False, concat_static: bool = False, 
-                 run_dir: Path = None, n_jobs: int = 1, hidden_size: int = 256, 
+    def __init__(self, num_dynamic_vars, num_static_vars, use_mse: bool = True,
+                 no_static: bool = False, concat_static: bool = False,
+                 run_dir: Path = None, n_jobs: int = 1, hidden_size: int = 256,
                  learning_rate: float = 1e-3, learning_rates: Dict = {}, epochs: int = 30,
                  initial_forget_bias: int = 5, dropout: float = 0.0, batch_size: int = 256,
                  clip_norm: bool = True, clip_value: float = 1.0):
@@ -45,7 +45,7 @@ class LumpedLSTM(LumpedModel):
         self.clip_norm = clip_norm
         self.clip_value = clip_value
         self.n_jobs = n_jobs
-        
+
         self.model = Model(input_size_dyn=input_size_dyn,
                            input_size_stat=input_size_stat,
                            concat_static=concat_static,
@@ -62,12 +62,12 @@ class LumpedLSTM(LumpedModel):
         self.loader = DataLoader(ds, batch_size=self.batch_size,
                                  shuffle=True, num_workers=self.n_jobs)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rates[0])
-        
+
         for epoch in range(1, self.epochs + 1):
             # set new learning rate
-            if epoch in learning_rates.keys():
+            if epoch in self.learning_rates.keys():
                 for param_group in self.optimizer.param_groups:
-                    param_group["lr"] = learning_rates[epoch]
+                    param_group["lr"] = self.learning_rates[epoch]
 
             self._train_epoch(epoch, self.use_mse)
 
@@ -77,7 +77,7 @@ class LumpedLSTM(LumpedModel):
         print(f"Model saved as {model_path}.")
 
     def predict(self, ds: LumpedBasin) -> np.ndarray:
-        model.eval()
+        self.model.eval()
 
         loader = DataLoader(ds, batch_size=1024, shuffle=False, num_workers=4)
         preds, obs = None, None
@@ -86,11 +86,11 @@ class LumpedLSTM(LumpedModel):
                 if len(data) == 2:
                     x, y = data
                     x = x.to(DEVICE)
-                    p = model(x)[0]
+                    p = self.model(x)[0]
                 elif len(data) == 3:
                     x_d, x_s, y = data
                     x_d, x_s = x_d.to(DEVICE), x_s.to(DEVICE)
-                    p = model(x_d, x_s[:, 0, :])[0]
+                    p = self.model(x_d, x_s[:, 0, :])[0]
 
                 if preds is None:
                     preds = p.detach().cpu()
@@ -112,7 +112,7 @@ class LumpedLSTM(LumpedModel):
         self.model.train()
 
         # process bar handle
-        pbar = tqdm(loader, file=sys.stdout)
+        pbar = tqdm(self.loader, file=sys.stdout)
         pbar.set_description(f'# Epoch {epoch}')
 
         # Iterate in batches over training set
@@ -334,8 +334,8 @@ class EALSTM(nn.Module):
             h_0, c_0 = h_x
 
             # calculate gates
-            gates = (torch.addmm(bias_batch, h_0, self.weight_hh) +
-                     torch.mm(x_d[t], self.weight_ih))
+            gates = (torch.addmm(bias_batch, h_0, self.weight_hh)
+                     + torch.mm(x_d[t], self.weight_ih))
             f, o, g = gates.chunk(3, 1)
 
             c_1 = torch.sigmoid(f) * c_0 + i * torch.tanh(g)
@@ -408,7 +408,7 @@ class LSTM(nn.Module):
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Performs a forward pass on the model.
-        
+
         Parameters
         ----------
         x : torch.Tensor

@@ -1,9 +1,11 @@
 from setuptools import setup
 from os import path
 
+
 def readme():
     with open(path.dirname(path.realpath(__file__)) + '/README.md') as f:
         return f.read()
+
 
 setup(name='mlstream',
       version='0.1',
@@ -28,4 +30,3 @@ setup(name='mlstream',
       ],
       include_package_data=True,
       zip_safe=False)
-

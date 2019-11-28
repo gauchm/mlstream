@@ -152,7 +152,7 @@ def prepare_data(cfg: Dict, basins: List) -> Dict:
     """
     # create database file containing the static basin attributes
     cfg["db_path"] = cfg["run_dir"] / "static_attributes.db"
-    store_static_attributes(cfg["data_root"], db_path=cfg["db_path"], 
+    store_static_attributes(cfg["data_root"], db_path=cfg["db_path"],
                             attribute_names=cfg["static_attributes"])
 
     # create .h5 files for train and validation data

@@ -4,7 +4,7 @@ from pathlib import Path
 import sqlite3
 
 import pandas as pd
-import numpy as np   
+import numpy as np
 import netCDF4 as nc
 from numba import njit
 
@@ -18,7 +18,7 @@ def get_basin_list(data_root: Path, basin_type: str) -> List:
         Path to base data directory, which contains a folder 'gauge_info'
         with one or more csv-files.
     basin_type : str
-        'C' to return calibration stations only, 
+        'C' to return calibration stations only,
         'V' to return validation stations only,
         '*' to return all stations
 
@@ -48,7 +48,7 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
     Parameters
     ----------
     data_root : Path
-        Path to base data directory, which contains a directory 'discharge' 
+        Path to base data directory, which contains a directory 'discharge'
         with one or more nc-files.
     basins : List, optional
         List of basins for which to return data. If None (default), all basins are returned
@@ -69,13 +69,13 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
             else range(len(f_basins))
         if len(target_basins) > 0:
             time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
-            data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time, 
+            data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
                                 columns=f_basins[target_basins])
             if data_streamflow is None:
                 data_streamflow = data
             else:
                 # some basins might be in multiple NC-files. We only load them once.
-                data = data[[s for s in obj_basins if s not in data_streamflow.columns]]
+                data = data[[s for s in f_basins if s not in data_streamflow.columns]]
                 data_streamflow = data_streamflow.join(data)
         q_nc.close()
 
@@ -241,4 +241,3 @@ def reshape_data(x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndar
         y_new[i, :] = y[i + seq_length - 1, 0]
 
     return x_new, y_new
-

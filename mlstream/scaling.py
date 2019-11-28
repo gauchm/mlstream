@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 
 import pandas as pd
 import numpy as np
@@ -34,7 +34,7 @@ class InputScaler(Scaler):
         self.scalers["mean"] = all_forcings.mean(axis=0).values
 
         stds = all_forcings.std(axis=0).values
-        stds[stds==0] = 1  # avoid divide-by-zero
+        stds[stds == 0] = 1  # avoid divide-by-zero
         self.scalers["std"] = stds
 
 
@@ -45,8 +45,8 @@ class OutputScaler(Scaler):
         super().__init__()
 
         all_outputs = load_discharge(data_root, basins)
-        all_outputs = all_outputs[(all_outputs['date'] >= start_date) &
-                                  (all_outputs['date'] <= end_date)]
+        all_outputs = all_outputs[(all_outputs['date'] >= start_date)
+                                  & (all_outputs['date'] <= end_date)]
         self.scalers["mean"] = all_outputs["qobs"].mean()
         self.scalers["std"] = all_outputs["qobs"].std()
 
