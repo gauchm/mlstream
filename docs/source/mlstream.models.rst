@@ -36,6 +36,14 @@ mlstream.models.sklearn\_models module
    :undoc-members:
    :show-inheritance:
 
+mlstream.models.xgboost module
+------------------------------
+
+.. automodule:: mlstream.models.xgboost
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

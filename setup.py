@@ -26,7 +26,8 @@ setup(name='mlstream',
           'tqdm',
           'netCDF4',
           'numba',
-          'scipy'
+          'scipy',
+          'xgboost'
       ],
       include_package_data=True,
       zip_safe=False)

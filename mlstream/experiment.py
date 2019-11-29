@@ -188,8 +188,8 @@ class Experiment:
             Array containing the observed discharge for the entire data period
         """
         preds, obs = self.model.predict(ds)
-        preds[preds < 0] = 0
         preds = ds.output_scalers.rescale(preds)
+        preds[preds < 0] = 0
 
         return preds, obs
 

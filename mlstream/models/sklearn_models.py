@@ -35,7 +35,7 @@ class LumpedSklearnRegression(LumpedModel):
 
         # this shouldn't happen since we raise an exception if concat_static is False.
         else:
-            raise ValueError("Linear regression has to use concat_static.")
+            raise ValueError("Sklearn regression has to use concat_static.")
 
         x = x.reshape(len(x), -1)
         y = y.reshape(len(y))

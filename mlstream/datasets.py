@@ -5,6 +5,7 @@ import h5py
 import torch
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 from torch.utils.data import Dataset
 
 from .datautils import (load_discharge,
@@ -117,7 +118,7 @@ class LumpedBasin(Dataset):
         df = load_forcings_lumped(self.data_root, [self.basin])[self.basin]
         qobs = load_discharge(self.data_root, basins=[self.basin]).set_index('date')['qobs']
         if not self.is_train and len(qobs) == 0:
-            print(f"Treating {self.basin} as validation basin (no streamflow data found).")
+            tqdm.write(f"Treating {self.basin} as validation basin (no streamflow data found).")
             qobs = pd.Series(np.nan, index=df.index, name='qobs')
 
         df = df.loc[self.dates[0]:self.dates[1]]
@@ -144,7 +145,7 @@ class LumpedBasin(Dataset):
         if self.is_train:
             # Delete all samples where discharge is NaN
             if np.sum(np.isnan(y)) > 0:
-                print(f"Deleted {np.sum(np.isnan(y))} records due to NaNs in basin {self.basin}.")
+                tqdm.write(f"Deleted {np.sum(np.isnan(y))} NaNs in basin {self.basin}.")
                 x = np.delete(x, np.argwhere(np.isnan(y)), axis=0)
                 y = np.delete(y, np.argwhere(np.isnan(y)), axis=0)
 
@@ -278,6 +279,7 @@ class LumpedH5(Dataset):
                 return x, attributes, y, q_std
 
     def _preload_data(self):
+        print("Preloading training data.")
         with h5py.File(self.h5_file, 'r') as f:
             x = f["input_data"][:]
             y = f["target_data"][:]
