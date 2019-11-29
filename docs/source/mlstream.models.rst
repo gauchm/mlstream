@@ -12,14 +12,6 @@ mlstream.models.base\_models module
    :undoc-members:
    :show-inheritance:
 
-mlstream.models.linear\_models module
--------------------------------------
-
-.. automodule:: mlstream.models.linear_models
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mlstream.models.lstm module
 ---------------------------
 
@@ -32,6 +24,14 @@ mlstream.models.nseloss module
 ------------------------------
 
 .. automodule:: mlstream.models.nseloss
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlstream.models.sklearn\_models module
+--------------------------------------
+
+.. automodule:: mlstream.models.sklearn_models
    :members:
    :undoc-members:
    :show-inheritance:

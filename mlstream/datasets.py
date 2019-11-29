@@ -74,7 +74,7 @@ class LumpedBasin(Dataset):
         if scalers is not None:
             self.input_scalers, self.output_scalers, self.static_scalers = scalers
         else:
-            self.input_scalers, self.output_scalers, self.static_scalers = None, None, None
+            self.input_scalers, self.output_scalers, self.static_scalers = None, None, {}
         if self.input_scalers is None:
             self.input_scalers = InputScaler(self.data_root, self.train_basins,
                                              self.dates[0], self.dates[1])
@@ -116,11 +116,12 @@ class LumpedBasin(Dataset):
 
         df = load_forcings_lumped(self.data_root, [self.basin])[self.basin]
         qobs = load_discharge(self.data_root, basins=[self.basin]).set_index('date')['qobs']
+        if not self.is_train and len(qobs) == 0:
+            print(f"Treating {self.basin} as validation basin (no streamflow data found).")
+            qobs = pd.Series(np.nan, index=df.index, name='qobs')
+
         df = df.loc[self.dates[0]:self.dates[1]]
         qobs = qobs.loc[self.dates[0]:self.dates[1]]
-        if len(qobs) == 0 and not is_train:
-            print(f"Treating {self.basin} as validation basin (no streamflow data found)")
-            qobs = np.full(len(df), np.nan)
         if len(qobs) != len(df):
             print(f"Length of forcings {len(df)} and observations {len(qobs)} \
                   doesn't match for basin {self.basin}")
@@ -136,14 +137,14 @@ class LumpedBasin(Dataset):
         y = np.array([df['qobs'].values]).T
 
         # normalize data, reshape for LSTM training and remove invalid samples
-        x = self.input_scalers.scale(x)
+        x = self.input_scalers.normalize(x)
 
         x, y = reshape_data(x, y, self.seq_length)
 
         if self.is_train:
             # Delete all samples where discharge is NaN
             if np.sum(np.isnan(y)) > 0:
-                print(f"Deleted {np.sum(np.isnan(y))} records because of NaNs in basin {self.basin}")
+                print(f"Deleted {np.sum(np.isnan(y))} records due to NaNs in basin {self.basin}.")
                 x = np.delete(x, np.argwhere(np.isnan(y)), axis=0)
                 y = np.delete(y, np.argwhere(np.isnan(y)), axis=0)
 
@@ -154,7 +155,7 @@ class LumpedBasin(Dataset):
             # store std of discharge before normalization
             self.q_std = np.std(y)
 
-            y = self.output_scalers.scale(y)
+            y = self.output_scalers.normalize(y)
 
         # convert arrays to torch tensors
         x = torch.from_numpy(x.astype(np.float32))
@@ -167,10 +168,10 @@ class LumpedBasin(Dataset):
 
         # normalize data
         for feature in [f for f in df.columns if 'onehot' not in f]:
-            if self.static_scalers[feature] is None:
+            if feature not in self.static_scalers or self.static_scalers[feature] is None:
                 self.static_scalers[feature] = \
                     StaticAttributeScaler(self.db_path, self.train_basins, feature)
-            df[feature] = self.static_scalers[feature].scale(df[feature])
+            df[feature] = self.static_scalers[feature].normalize(df[feature])
 
         # store attribute names
         self.attribute_names = df.columns
@@ -303,7 +304,7 @@ class LumpedH5(Dataset):
         for feature in [f for f in df.columns if 'onehot' not in f]:
             self.attribute_scalers[feature] = \
                 StaticAttributeScaler(self.db_path, self.basins, feature)
-            df[feature] = self.attribute_scalers[feature].scale(df[feature])
+            df[feature] = self.attribute_scalers[feature].normalize(df[feature])
 
         # store attribute names
         self.attribute_names = df.columns

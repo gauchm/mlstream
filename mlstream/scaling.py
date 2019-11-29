@@ -14,11 +14,11 @@ class Scaler:
     def __init__(self):
         self.scalers = {}
 
-    def scale(self, feature: np.ndarray) -> np.ndarray:
-        return feature * self.scalers["std"] + self.scalers["mean"]
+    def normalize(self, feature: np.ndarray) -> np.ndarray:
+        return (feature - self.scalers["mean"]) / self.scalers["std"]
 
     def rescale(self, feature: np.ndarray) -> np.ndarray:
-        return (feature - self.scalers["mean"]) / self.scalers["std"]
+        return (feature * self.scalers["std"]) + self.scalers["mean"]
 
 
 class InputScaler(Scaler):

@@ -58,36 +58,30 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
     discharge_dir = data_root / 'discharge'
     files = discharge_dir.glob('*.nc')
 
-    data_streamflow = None
+    data_streamflow = pd.DataFrame(columns=['date', 'basin', 'qobs'])
     found_basins = []
     for f in files:
         q_nc = nc.Dataset(f, 'r')
-        f_basins = q_nc['station_id'][:]
+        file_basins = q_nc['station_id'][:]
         if basins is not None:
             # some basins might be in multiple NC-files. We only load them once.
-            target_basins = [i for i, b in enumerate(f_basins)
+            target_basins = [i for i, b in enumerate(file_basins)
                              if b in basins and b not in found_basins]
         else:
-            target_basins = [i for i, b in enumerate(f_basins)
+            target_basins = [i for i, b in enumerate(file_basins)
                              if b not in found_basins]
         if len(target_basins) > 0:
             time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
             data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
-                                columns=f_basins[target_basins])
-            found_basins += data.columns.tolist()
-            if data_streamflow is None:
-                data_streamflow = data
-            else:
-                data_streamflow = data_streamflow.join(data)
+                                columns=file_basins[target_basins])
+            data = data.unstack().reset_index().rename({'level_0': 'basin',
+                                                        'level_1': 'date',
+                                                        0: 'qobs'}, axis=1)
+            found_basins += data['basin'].unique().tolist()
+            data_streamflow = data_streamflow.append(data, ignore_index=True, sort=True)
+
         q_nc.close()
 
-    data_streamflow = data_streamflow.unstack().reset_index().rename({'level_0': 'basin',
-                                                                      'level_1': 'date',
-                                                                      0: 'qobs'}, axis=1)
-
-    if basins is not None:
-        data_streamflow = data_streamflow[data_streamflow['basin'].isin(basins)] \
-            .reset_index(drop=True)
     return data_streamflow
 
 

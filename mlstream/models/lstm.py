@@ -117,7 +117,8 @@ class LumpedLSTM(LumpedModel):
         pbar.set_description(f'# Epoch {epoch}')
 
         # Iterate in batches over training set
-        for data in pbar:
+        running_loss = 0
+        for i, data in enumerate(pbar):
             # delete old gradients
             self.optimizer.zero_grad()
 
@@ -151,7 +152,8 @@ class LumpedLSTM(LumpedModel):
             # perform parameter update
             self.optimizer.step()
 
-            pbar.set_postfix_str(f"Loss: {loss.item():5f}")
+            running_loss += loss.item()
+            pbar.set_postfix_str(f"Loss: {loss.item():.5f} / Mean: {running_loss / (i+1):.5f}")
 
 
 class Model(nn.Module):

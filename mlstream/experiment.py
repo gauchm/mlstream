@@ -1,7 +1,7 @@
 import json
 import random
 from pathlib import Path
-from typing import Dict, List, Tuple, Callable
+from typing import Dict, List, Tuple
 
 from tqdm import tqdm
 import pandas as pd
@@ -193,18 +193,15 @@ class Experiment:
 
         return preds, obs
 
-    def get_nse(self, how: Callable = np.median) -> float:
-        """Calculates the experiment's mean/median NSE.
+    def get_nses(self) -> Dict:
+        """Calculates the experiment's NSE for each calibration basin.
 
-        Parameters
-        ----------
-        how : Callable, optional
-            How to aggregate multiple basin's NSEs. Default: np.median
+        Validation basins are ignored since they don't provide ground truth.
 
         Returns
         -------
-        nse : float
-            Aggregated NSE
+        nses : Dict
+            Dictionary mapping basin ids to their NSE
 
         Raises
         ------
@@ -214,9 +211,9 @@ class Experiment:
         if len(self.results) == 0:
             raise AttributeError("No results to evaluate.")
 
-        nses = []
+        nses = {}
         for basin, df in self.results.items():
             # ignore validation basins that have no ground truth
             if not all(pd.isna(df['qobs'])):
-                nses.append(nse(df['qsim'].values, df['qobs'].values))
-        return how(nses)
+                nses[basin] = nse(df['qsim'].values, df['qobs'].values)
+        return nses

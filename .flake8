@@ -4,6 +4,7 @@ ignore =
     H101    # Use TODO(NAME)
 exclude =
     .git,
+    .ipynb_checkpoints,
     __pycache__,
     docs/source/conf.py,
     dist
