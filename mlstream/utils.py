@@ -197,6 +197,8 @@ def setup_run(cfg: Dict) -> Dict:
                 temp_cfg[key] = str(val)
             elif isinstance(val, pd.Timestamp):
                 temp_cfg[key] = val.strftime(format="%d%m%Y")
+            elif isinstance(val, np.ndarray):
+                temp_cfg[key] = val.tolist()  # np.ndarrays are not serializable
             elif 'param_dist' in key:
                 temp_dict = {}
                 for k, v in val.items():
@@ -210,3 +212,35 @@ def setup_run(cfg: Dict) -> Dict:
         json.dump(temp_cfg, fp, sort_keys=True, indent=4)
 
     return cfg
+
+
+def nse(qsim: np.ndarray, qobs: np.ndarray) -> float:
+    """Calculates NSE, ignoring NANs in ``qobs``.
+
+    .. math::
+      \\text{NSE} =
+      1 - \\frac{\\sum_{t=1}^T{(q_s^t - q_o^t)^2}}{\\sum_{t=1}^T{(q_o^t - \\bar{q}_o)^2}}
+
+    Parameters
+    ----------
+    qsim : np.ndarray
+        Predicted streamflow
+    qobs : np.ndarray
+        Ground truth streamflow
+
+    Returns
+    -------
+    nse : float
+        The prediction's NSE
+
+    Raises
+    ------
+    ValueError
+        If lenghts of qsim and qobs are not equal.
+    """
+    if len(qsim) != len(qobs):
+        raise ValueError(f"Lenghts of qsim {len(qsim)} and qobs {len(qobs)} mismatch.")
+
+    qsim = qsim[~np.isnan(qobs)]
+    qobs = qobs[~np.isnan(qobs)]
+    return 1 - (np.sum(np.square(qsim - qobs)) / np.sum(np.square(qobs - np.mean(qobs))))

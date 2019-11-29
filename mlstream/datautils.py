@@ -16,7 +16,7 @@ def get_basin_list(data_root: Path, basin_type: str) -> List:
     ----------
     data_root : Path
         Path to base data directory, which contains a folder 'gauge_info'
-        with one or more csv-files.
+        with the ``gauge_info.csv`` file
     basin_type : str
         'C' to return calibration stations only,
         'V' to return validation stations only,
@@ -30,14 +30,11 @@ def get_basin_list(data_root: Path, basin_type: str) -> List:
     if basin_type not in ['*', 'C', 'V']:
         raise ValueError('Illegal basin type')
 
-    gauge_info_dir = data_root / 'gauge_info'
-    files = gauge_info_dir.glob('*.csv')
-    basins = np.array([], dtype=str)
-    for f in files:
-        gauge_info = pd.read_csv(f)
-        if basin_type != '*':
-            gauge_info = gauge_info[gauge_info['Calibration/Validation'] == basin_type]
-        basins = np.concatenate([basins, gauge_info['ID'].values])
+    gauge_info_file = data_root / 'gauge_info' / 'gauge_info.csv'
+    gauge_info = pd.read_csv(gauge_info_file)
+    if basin_type != '*':
+        gauge_info = gauge_info[gauge_info['Cal_Val'] == basin_type]
+    basins = gauge_info['Gauge_ID'].values
 
     return np.unique(basins).tolist()
 
@@ -62,28 +59,34 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
     files = discharge_dir.glob('*.nc')
 
     data_streamflow = None
+    found_basins = []
     for f in files:
         q_nc = nc.Dataset(f, 'r')
         f_basins = q_nc['station_id'][:]
-        target_basins = [i for i, b in enumerate(f_basins) if b in basins] if basins is not None \
-            else range(len(f_basins))
+        if basins is not None:
+            # some basins might be in multiple NC-files. We only load them once.
+            target_basins = [i for i, b in enumerate(f_basins)
+                             if b in basins and b not in found_basins]
+        else:
+            target_basins = [i for i, b in enumerate(f_basins)
+                             if b not in found_basins]
         if len(target_basins) > 0:
             time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
             data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
                                 columns=f_basins[target_basins])
+            found_basins += data.columns.tolist()
             if data_streamflow is None:
                 data_streamflow = data
             else:
-                # some basins might be in multiple NC-files. We only load them once.
-                data = data[[s for s in f_basins if s not in data_streamflow.columns]]
                 data_streamflow = data_streamflow.join(data)
         q_nc.close()
 
-    data_streamflow = data_streamflow.loc['2000-01-01':'2016-12-31'].unstack().reset_index()\
-        .rename({'level_0': 'basin', 'level_1': 'date', 0: 'qobs'}, axis=1)
+    data_streamflow = data_streamflow.unstack().reset_index().rename({'level_0': 'basin',
+                                                                      'level_1': 'date',
+                                                                      0: 'qobs'}, axis=1)
 
     if basins is not None:
-        data_streamflow = data_streamflow[data_streamflow['basin'].isin(basins)]\
+        data_streamflow = data_streamflow[data_streamflow['basin'].isin(basins)] \
             .reset_index(drop=True)
     return data_streamflow
 
@@ -144,14 +147,12 @@ def store_static_attributes(data_root: Path, db_path: Path = None, attribute_nam
     RuntimeError
         If attributes folder can not be found.
     """
-    static_attributes = pd.DataFrame()
-    gauge_info_dir = data_root / 'gauge_info'
-    for f in gauge_info_dir.glob('*.csv'):
-        gauge_info = pd.read_csv(f).rename({'ID': 'basin'}, axis=1).set_index('basin')
-        new_basins = [b for b in gauge_info.index.values if b not in static_attributes.index.values]
-        if attribute_names is None:
-            attribute_names = gauge_info.columns
-        static_attributes = static_attributes.append(gauge_info.loc[new_basins, attribute_names])
+    f = data_root / 'gauge_info' / 'gauge_info.csv'
+    gauge_info = pd.read_csv(f).rename({'Gauge_ID': 'basin'}, axis=1).set_index('basin')
+    if attribute_names is not None:
+        static_attributes = gauge_info.loc[:, attribute_names]
+    else:
+        static_attributes = gauge_info
 
     if db_path is None:
         db_path = data_root / 'static_attributes.db'
@@ -191,7 +192,7 @@ def load_static_attributes(db_path: Path,
 
     # drop lat/lon col
     if drop_lat_lon:
-        df = df.drop(['Lat', 'Lon'], axis=1)
+        df = df.drop(['Lat_outlet', 'Lon_outlet'], axis=1)
 
     # drop invalid attributes
     if keep_features is not None:

@@ -28,6 +28,7 @@ class InputScaler(Scaler):
         super().__init__()
 
         all_forcings = pd.DataFrame()
+        print("Loading forcings for input scaler.")
         basin_forcings = load_forcings_lumped(data_root, basins)
         for basin, forcing in basin_forcings.items():
             all_forcings = all_forcings.append(forcing.loc[start_date:end_date])
@@ -44,6 +45,7 @@ class OutputScaler(Scaler):
                  start_date: pd.Timestamp, end_date: pd.Timestamp):
         super().__init__()
 
+        print("Loading streamflow for output scaler.")
         all_outputs = load_discharge(data_root, basins)
         all_outputs = all_outputs[(all_outputs['date'] >= start_date)
                                   & (all_outputs['date'] <= end_date)]

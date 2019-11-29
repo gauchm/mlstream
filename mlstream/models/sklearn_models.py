@@ -2,24 +2,22 @@ from pathlib import Path
 import pickle
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
+from sklearn.base import BaseEstimator
 from torch.utils.data import DataLoader
 
 from ..datasets import LumpedBasin, LumpedH5
 from .base_models import LumpedModel
 
 
-class LumpedLinearRegression(LumpedModel):
-    """Linear regression model for lumped data. """
+class LumpedSklearnRegression(LumpedModel):
+    """Wrapper for scikit-learn regression models on lumped data. """
 
-    def __init__(self, num_dynamic_vars, num_static_vars, use_mse: bool = True,
+    def __init__(self, model: BaseEstimator,
                  no_static: bool = False, concat_static: bool = True,
                  run_dir: Path = None, n_jobs: int = 1):
-        if not use_mse:
-            print("Linear regression does not support NSE.")
         if not no_static and not concat_static:
-            raise ValueError("Linear regression has to use concat_static.")
-        self.model = LinearRegression(n_jobs=n_jobs)
+            raise ValueError("Sklearn regression has to use concat_static.")
+        self.model = model
         self.run_dir = run_dir
         self.n_jobs = n_jobs
 
@@ -59,7 +57,7 @@ class LumpedLinearRegression(LumpedModel):
 
         # this shouldn't happen since we didn't allow concat_static = False in training.
         else:
-            raise ValueError("Linear regression has to use concat_static.")
+            raise ValueError("sklearn regression has to use concat_static or no_static.")
 
         x = x.reshape(len(x), -1)
         y = y.reshape(len(y))

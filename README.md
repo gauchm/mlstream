@@ -16,7 +16,7 @@ The idea is to create an easy way of training machine learning streamflow models
 Just provide your data, select a model (or provide your own), and get the predictions.
 
 ### Training
-```
+```python
 exp = Experiment(data_path, is_train=True, run_dir=run_dir,
                  start_date='01012000', end_date='31122015',
                  basins=train_basin_ids, 
@@ -28,7 +28,7 @@ exp.train()
 ```
 
 ### Inference
-```
+```python
 run_dir = Path('./experiments')
 exp = Experiment(data_path, is_train=False, 
                  run_dir=run_dir, 

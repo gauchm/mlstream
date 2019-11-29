@@ -26,7 +26,7 @@ torch.backends.cudnn.benchmark = False
 class LumpedLSTM(LumpedModel):
     """(EA-)LSTM model for lumped data. """
 
-    def __init__(self, num_dynamic_vars, num_static_vars, use_mse: bool = True,
+    def __init__(self, num_dynamic_vars: int, num_static_vars: int, use_mse: bool = True,
                  no_static: bool = False, concat_static: bool = False,
                  run_dir: Path = None, n_jobs: int = 1, hidden_size: int = 256,
                  learning_rate: float = 1e-3, learning_rates: Dict = {}, epochs: int = 30,
@@ -45,6 +45,7 @@ class LumpedLSTM(LumpedModel):
         self.clip_norm = clip_norm
         self.clip_value = clip_value
         self.n_jobs = n_jobs
+        self.use_mse = use_mse
 
         self.model = Model(input_size_dyn=input_size_dyn,
                            input_size_stat=input_size_stat,
@@ -69,7 +70,7 @@ class LumpedLSTM(LumpedModel):
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = self.learning_rates[epoch]
 
-            self._train_epoch(epoch, self.use_mse)
+            self._train_epoch(epoch)
 
             model_path = self.run_dir / f"model_epoch{epoch}.pt"
             torch.save(self.model.state_dict(), str(model_path))

@@ -112,16 +112,19 @@ class LumpedBasin(Dataset):
 
     def _load_data(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Loads input and output data from text files. """
+        # we use (seq_len) time steps before start for warmup
+
         df = load_forcings_lumped(self.data_root, [self.basin])[self.basin]
         qobs = load_discharge(self.data_root, basins=[self.basin]).set_index('date')['qobs']
+        df = df.loc[self.dates[0]:self.dates[1]]
+        qobs = qobs.loc[self.dates[0]:self.dates[1]]
+        if len(qobs) == 0 and not is_train:
+            print(f"Treating {self.basin} as validation basin (no streamflow data found)")
+            qobs = np.full(len(df), np.nan)
         if len(qobs) != len(df):
-            print(f"Length of forcings and observations doesn't match for basin {self.basin}")
+            print(f"Length of forcings {len(df)} and observations {len(qobs)} \
+                  doesn't match for basin {self.basin}")
         df['qobs'] = qobs
-
-        # we use (seq_len) time steps before start for warmup
-        start_date = self.dates[0] - pd.DateOffset(days=self.seq_length - 1)
-        end_date = self.dates[1]
-        df = df[start_date:end_date]
 
         # store first and last date of the selected period
         self.period_start = df.index[0]
@@ -140,7 +143,7 @@ class LumpedBasin(Dataset):
         if self.is_train:
             # Delete all samples where discharge is NaN
             if np.sum(np.isnan(y)) > 0:
-                print(f"Deleted some records because of NaNs in basin {self.basin}")
+                print(f"Deleted {np.sum(np.isnan(y))} records because of NaNs in basin {self.basin}")
                 x = np.delete(x, np.argwhere(np.isnan(y)), axis=0)
                 y = np.delete(y, np.argwhere(np.isnan(y)), axis=0)
 

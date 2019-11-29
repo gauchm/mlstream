@@ -1,7 +1,7 @@
 import json
 import random
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Callable
 
 from tqdm import tqdm
 import pandas as pd
@@ -10,7 +10,7 @@ import torch
 
 from .datasets import LumpedBasin, LumpedH5
 from .scaling import InputScaler, OutputScaler, StaticAttributeScaler
-from .utils import setup_run, prepare_data
+from .utils import setup_run, prepare_data, nse
 from .datautils import load_static_attributes
 
 
@@ -34,10 +34,10 @@ class Experiment:
         run_dir: Path
             Path to store experiment results in.
         start_date : str, optional
-            Start date (training start date if `is_train`, else
+            Start date (training start date if ``is_train``, else
             validation start date, ddmmyyyy)
         end_date : str, optional
-            End date (training end date if `is_train`, else
+            End date (training end date if ``is_train``, else
             validation end date, ddmmyyyy)
         basins : List, optional
             List of basins to use during training,
@@ -62,6 +62,7 @@ class Experiment:
             Optional dictionary of values to store in cfg.json for documentation purpose.
         """
         self.model = None
+        self.results = {}
 
         self.cfg = {
             "data_root": data_root,
@@ -146,7 +147,6 @@ class Experiment:
                                                             feature)
 
         # self.cfg["basins"] contains the test basins, run_cfg["basins"] the train basins.
-        results = {}
         for basin in tqdm(self.cfg["basins"]):
             ds_test = LumpedBasin(data_root=Path(self.cfg["data_root"]),
                                   basin=basin,
@@ -162,13 +162,15 @@ class Experiment:
 
             preds, obs = self.predict_basin(ds_test)
 
-            date_range = pd.date_range(start=self.cfg["start_date"], end=self.cfg["end_date"])
+            date_range = pd.date_range(start=self.cfg["start_date"]
+                                       + pd.DateOffset(days=run_cfg["seq_length"] - 1),
+                                       end=self.cfg["end_date"])
             df = pd.DataFrame(data={'qobs': obs.flatten(), 'qsim': preds.flatten()},
                               index=date_range)
 
-            results[basin] = df
+            self.results[basin] = df
 
-        return results
+        return self.results
 
     def predict_basin(self, ds: LumpedBasin) -> Tuple[np.ndarray, np.ndarray]:
         """Predicts a single basin.
@@ -190,3 +192,31 @@ class Experiment:
         preds = ds.output_scalers.rescale(preds)
 
         return preds, obs
+
+    def get_nse(self, how: Callable = np.median) -> float:
+        """Calculates the experiment's mean/median NSE.
+
+        Parameters
+        ----------
+        how : Callable, optional
+            How to aggregate multiple basin's NSEs. Default: np.median
+
+        Returns
+        -------
+        nse : float
+            Aggregated NSE
+
+        Raises
+        ------
+        AttributeError
+            If called before predicting
+        """
+        if len(self.results) == 0:
+            raise AttributeError("No results to evaluate.")
+
+        nses = []
+        for basin, df in self.results.items():
+            # ignore validation basins that have no ground truth
+            if not all(pd.isna(df['qobs'])):
+                nses.append(nse(df['qsim'].values, df['qobs'].values))
+        return how(nses)
