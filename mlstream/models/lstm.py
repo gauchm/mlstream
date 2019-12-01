@@ -11,7 +11,7 @@ import numpy as np
 from tqdm import tqdm
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, SubsetRandomSampler
 
 from ..datasets import LumpedBasin, LumpedH5
 from .base_models import LumpedModel
@@ -60,8 +60,19 @@ class LumpedLSTM(LumpedModel):
         self.model.load_state_dict(torch.load(model_file, map_location=DEVICE))
 
     def train(self, ds: LumpedH5) -> None:
-        self.loader = DataLoader(ds, batch_size=self.batch_size,
-                                 shuffle=True, num_workers=self.n_jobs)
+        
+        val_indices = np.random.choice(len(ds), size=int(0.1 * len(ds)), replace=False)
+        train_indices = [i for i in range(len(ds)) if i not in val_indices]
+        train_sampler = SubsetRandomSampler(train_indices)
+        val_sampler = SubsetRandomSampler(val_indices)
+        self.train_loader = DataLoader(ds, self.batch_size,
+                                       sampler=train_sampler,
+                                       drop_last=False,
+                                       num_workers=self.n_jobs)
+        self.val_loader = DataLoader(ds, self.batch_size,
+                                     sampler=val_sampler,
+                                     drop_last=False,
+                                     num_workers=self.n_jobs)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rates[0])
 
         for epoch in range(1, self.epochs + 1):
@@ -71,6 +82,8 @@ class LumpedLSTM(LumpedModel):
                     param_group["lr"] = self.learning_rates[epoch]
 
             self._train_epoch(epoch)
+            val_loss = self._val_epoch()
+            print(f"# Epoch {epoch}: validation loss: {val_loss:.7f}.")
 
             model_path = self.run_dir / f"model_epoch{epoch}.pt"
             torch.save(self.model.state_dict(), str(model_path))
@@ -113,7 +126,7 @@ class LumpedLSTM(LumpedModel):
         self.model.train()
 
         # process bar handle
-        pbar = tqdm(self.loader, file=sys.stdout)
+        pbar = tqdm(self.train_loader, file=sys.stdout)
         pbar.set_description(f'# Epoch {epoch}')
 
         # Iterate in batches over training set
@@ -153,8 +166,43 @@ class LumpedLSTM(LumpedModel):
             self.optimizer.step()
 
             running_loss += loss.item()
-            pbar.set_postfix_str(f"Loss: {loss.item():.5f} / Mean: {running_loss / (i+1):.5f}")
+            pbar.set_postfix_str(f"Loss: {loss.item():.6f} / Mean: {running_loss / (i+1):.6f}")
+            
+    def _val_epoch(self) -> float:
+        """Calculates loss on validation set during training.
 
+        Returns
+        -------
+        loss : float
+            Mean validation loss
+        """
+        self.model.eval()
+
+        loss = 0.0
+        with torch.no_grad():
+            for data in self.val_loader:
+                # forward pass through LSTM
+                if len(data) == 3:
+                    x, y, q_stds = data
+                    x, y, q_stds = x.to(DEVICE), y.to(DEVICE), q_stds.to(DEVICE)
+                    predictions = self.model(x)[0]
+
+                # forward pass through EALSTM
+                elif len(data) == 4:
+                    x_d, x_s, y, q_stds = data
+                    x_d, x_s, y = x_d.to(DEVICE), x_s.to(DEVICE), y.to(DEVICE)
+                    predictions = self.model(x_d, x_s[:, 0, :])[0]
+
+                # MSELoss
+                if self.use_mse:
+                    loss += self.loss_func(predictions, y).item()
+
+                # NSELoss needs std of each basin for each sample
+                else:
+                    q_stds = q_stds.to(DEVICE)
+                    loss += self.loss_func(predictions, y, q_stds).item()
+
+        return loss / len(self.val_loader)
 
 class Model(nn.Module):
     """Wrapper class that connects LSTM/EA-LSTM with fully connceted layer"""
