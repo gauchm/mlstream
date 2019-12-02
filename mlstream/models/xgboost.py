@@ -48,10 +48,10 @@ class LumpedXGBoost(LumpedModel):
         self.seed = seed
         
         if model_path is not None:
-            self.model = _load(model_path)
-
-    def _load(self, model_file: Path) -> None:
-        self.model = pickle.load(open(model_file, 'rb'))
+            self.load(model_path)
+            
+    def load(self, model_path: Path):
+        self.model = pickle.load(open(model_path, 'rb'))
 
     def train(self, ds: LumpedH5) -> None:
         # Create train/val sets
