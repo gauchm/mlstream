@@ -27,7 +27,8 @@ class LumpedXGBoost(LumpedModel):
                  param_search_n_iter: int = None,
                  param_search_early_stopping_rounds: int = None,
                  reg_search_param_dist: Dict = None,
-                 reg_search_n_iter: int = None):
+                 reg_search_n_iter: int = None,
+                 model_path: Path = None):
         if not no_static and not concat_static:
             raise ValueError("XGBoost has to use concat_static.")
         self.model = None
@@ -45,8 +46,11 @@ class LumpedXGBoost(LumpedModel):
         self.run_dir = run_dir
         self.n_jobs = n_jobs
         self.seed = seed
+        
+        if model_path is not None:
+            self.model = _load(model_path)
 
-    def load(self, model_file: Path) -> None:
+    def _load(self, model_file: Path) -> None:
         self.model = pickle.load(open(model_file, 'rb'))
 
     def train(self, ds: LumpedH5) -> None:
@@ -127,6 +131,8 @@ class LumpedXGBoost(LumpedModel):
 
         self.model = xgb.XGBRegressor()
         self.model.set_params(**xgb_params)
+        self.model.n_estimators = self.n_estimators
+        self.model.learning_rate = self.learning_rate
         self.model.objective = self.objective
         self.model.random_state = self.seed
         self.model.n_jobs = self.n_jobs
