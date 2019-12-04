@@ -168,7 +168,7 @@ class LumpedBasin(Dataset):
         df = load_static_attributes(self.db_path, [self.basin], drop_lat_lon=True)
 
         # normalize data
-        for feature in [f for f in df.columns if 'onehot' not in f]:
+        for feature in [f for f in df.columns if f[:7] != 'onehot_']:
             if feature not in self.static_scalers or self.static_scalers[feature] is None:
                 self.static_scalers[feature] = \
                     StaticAttributeScaler(self.db_path, self.train_basins, feature)
@@ -303,7 +303,7 @@ class LumpedH5(Dataset):
 
         # normalize data
         self.attribute_scalers = {}
-        for feature in [f for f in df.columns if 'onehot' not in f]:
+        for feature in [f for f in df.columns if f[:7] != 'onehot_']:
             self.attribute_scalers[feature] = \
                 StaticAttributeScaler(self.db_path, self.basins, feature)
             df[feature] = self.attribute_scalers[feature].normalize(df[feature])
