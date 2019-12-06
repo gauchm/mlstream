@@ -1,0 +1,16 @@
+name: rtdenv
+dependencies:
+  - python=3.7
+  - numpy
+  - scipy
+  - pandas
+  - sphinx
+  - sphinx_rtd_theme
+  - numba
+  - pytorch
+  - pandoc
+  - h5py
+  - tqdm
+  - netCDF4
+  - scikit-learn
+  - xgboost
