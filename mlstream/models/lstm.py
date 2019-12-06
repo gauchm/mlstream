@@ -60,7 +60,7 @@ class LumpedLSTM(LumpedModel):
         self.model.load_state_dict(torch.load(model_file, map_location=DEVICE))
 
     def train(self, ds: LumpedH5) -> None:
-        
+
         val_indices = np.random.choice(len(ds), size=int(0.1 * len(ds)), replace=False)
         train_indices = [i for i in range(len(ds)) if i not in val_indices]
         train_sampler = SubsetRandomSampler(train_indices)
@@ -167,7 +167,7 @@ class LumpedLSTM(LumpedModel):
 
             running_loss += loss.item()
             pbar.set_postfix_str(f"Loss: {loss.item():.6f} / Mean: {running_loss / (i+1):.6f}")
-            
+
     def _val_epoch(self) -> float:
         """Calculates loss on validation set during training.
 
@@ -203,6 +203,7 @@ class LumpedLSTM(LumpedModel):
                     loss += self.loss_func(predictions, y, q_stds).item()
 
         return loss / len(self.val_loader)
+
 
 class Model(nn.Module):
     """Wrapper class that connects LSTM/EA-LSTM with fully connceted layer"""

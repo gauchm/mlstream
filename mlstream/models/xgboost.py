@@ -46,10 +46,10 @@ class LumpedXGBoost(LumpedModel):
         self.run_dir = run_dir
         self.n_jobs = n_jobs
         self.seed = seed
-        
+
         if model_path is not None:
             self.load(model_path)
-            
+
     def load(self, model_path: Path):
         self.model = pickle.load(open(model_path, 'rb'))
 
