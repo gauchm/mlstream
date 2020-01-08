@@ -20,4 +20,4 @@ formats: all
 python:
   version: 3.7
   install:
-    - requirements: rdt_environment.txt
+    - requirements: rtd_environment.txt
