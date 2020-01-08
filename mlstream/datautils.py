@@ -10,7 +10,10 @@ from numba import njit
 
 
 def get_basin_list(data_root: Path, basin_type: str) -> List:
-    """Returns the list of basin names
+    """Returns the list of basin names.
+
+    If basin_type is 'C' or 'V', the gauge_info.csv needs to contain a column
+    'Cal_Val' that indicates the basin type.
 
     Parameters
     ----------
@@ -33,13 +36,18 @@ def get_basin_list(data_root: Path, basin_type: str) -> List:
     gauge_info_file = data_root / 'gauge_info' / 'gauge_info.csv'
     gauge_info = pd.read_csv(gauge_info_file)
     if basin_type != '*':
+        if 'Cal_Val' not in gauge_info.columns:
+            raise RuntimeError('gauge_info.csv needs column "Cal_Val" to filter for basin types.')
         gauge_info = gauge_info[gauge_info['Cal_Val'] == basin_type]
+
+    if 'Gauge_ID' not in gauge_info.columns:
+        raise RuntimeError('gauge_info.csv has no column "Gauge_ID".')
     basins = gauge_info['Gauge_ID'].values
 
     return np.unique(basins).tolist()
 
 
-def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
+def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc') -> pd.DataFrame:
     """Loads observed discharge for (calibration) gauging stations.
 
     Parameters
@@ -49,12 +57,17 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
         with one or more nc-files.
     basins : List, optional
         List of basins for which to return data. If None (default), all basins are returned
+    file_format : str, optional
+        Format of the discharge files. Default, and currently only supported format is 'nc'.
 
     Returns
     -------
     pd.DataFrame
         A DataFrame with columns [date, basin, qobs], where 'qobs' contains the streamflow.
     """
+    if file_format != 'nc':
+        raise NotImplementedError(f"Discharge format {file_format} not supported.")
+
     discharge_dir = data_root / 'discharge'
     files = discharge_dir.glob('*.nc')
 
@@ -85,7 +98,7 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
     return data_streamflow
 
 
-def load_forcings_lumped(data_root: Path, basins: List = None) -> Dict:
+def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str = 'rvt') -> Dict:
     """Loads basin-lumped forcings.
 
     Parameters
@@ -95,12 +108,17 @@ def load_forcings_lumped(data_root: Path, basins: List = None) -> Dict:
         which contains one .rvt-file per basin.
     basins : List, optional
         List of basins for which to return data. Default (None) returns data for all basins.
+    file_format : str, optional
+        Format of the forcing files. Default, and currently only supported format is 'rvt'.
 
     Returns
     -------
     dict
         Dictionary of forcings (pd.DataFrame) per basin
     """
+    if file_format != 'rvt':
+        raise NotImplementedError(f"Forcing format {file_format} not supported.")
+
     lumped_dir = data_root / 'forcings' / 'lumped'
     basin_files = lumped_dir.glob('*.rvt')
 

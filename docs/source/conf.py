@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'mlstream'
-copyright = '2019, Martin Gauch'
+copyright = '2020, Martin Gauch'
 author = 'Martin Gauch'
 
 # The full version, including alpha/beta/rc tags
