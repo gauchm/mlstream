@@ -4,7 +4,7 @@ pandas
 sphinx
 sphinx_rtd_theme
 numba
-pytorch
+torch
 pandoc
 h5py
 tqdm
