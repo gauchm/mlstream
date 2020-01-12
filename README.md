@@ -1,17 +1,15 @@
 # mlstream
+[![Documentation Status](https://readthedocs.org/projects/mlstream/badge/?version=latest)](https://mlstream.readthedocs.io/en/latest/?badge=latest)
 
 Machine learning for streamflow prediction.
 
-Oxford English Dictionary:
+**PyPI:** https://pypi.org/project/mlstream/
 
->  *maelstrom*, n. &nbsp;  /ˈmeɪlˌstrɑm/
->
-> 1. A powerful whirlpool, originally (usually Maelstrom) one in the Arctic Ocean off the west coast of Norway, which was formerly supposed to suck in and destroy all vessels within a wide radius.
-> 2. Any state of turbulence or confusion; a swirling mass of small objects.
+**Documentation:** https://mlstream.readthedocs.io/
 
 ## Usage
 
-This project is still work in progress.
+This project is work in progress.
 The idea is to create an easy way of training machine learning streamflow models:
 Just provide your data, select a model (or provide your own), and get the predictions.
 
