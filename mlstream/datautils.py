@@ -75,7 +75,8 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
     found_basins = []
     for f in files:
         q_nc = nc.Dataset(f, 'r')
-        file_basins = q_nc['station_id'][:]
+        file_basins_og = np.array([f for f in q_nc['station_id'][:]])
+        file_basins = np.array([f[-7:] for f in file_basins_og])
         if basins is not None:
             # some basins might be in multiple NC-files. We only load them once.
             target_basins = [i for i, b in enumerate(file_basins)
@@ -86,7 +87,7 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
         if len(target_basins) > 0:
             time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
             data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
-                                columns=file_basins[target_basins])
+                                columns=file_basins_og[target_basins])
             data = data.unstack().reset_index().rename({'level_0': 'basin',
                                                         'level_1': 'date',
                                                         0: 'qobs'}, axis=1)
@@ -210,7 +211,7 @@ def load_static_attributes(db_path: Path,
 
     # drop lat/lon col
     if drop_lat_lon:
-        df = df.drop(['Lat_outlet', 'Lon_outlet'], axis=1)
+        df = df.drop(['Lat_outlet', 'Lon_outlet'], axis=1, errors='ignore')
 
     # drop invalid attributes
     if keep_features is not None:

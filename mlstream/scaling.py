@@ -24,12 +24,13 @@ class Scaler:
 class InputScaler(Scaler):
 
     def __init__(self, data_root: Path, basins: List,
-                 start_date: pd.Timestamp, end_date: pd.Timestamp):
+                 start_date: pd.Timestamp, end_date: pd.Timestamp,
+                 forcings_file_format: str = 'rvt'):
         super().__init__()
 
         all_forcings = pd.DataFrame()
         print("Loading forcings for input scaler.")
-        basin_forcings = load_forcings_lumped(data_root, basins)
+        basin_forcings = load_forcings_lumped(data_root, basins, forcings_file_format)
         for basin, forcing in basin_forcings.items():
             all_forcings = all_forcings.append(forcing.loc[start_date:end_date])
         self.scalers["mean"] = all_forcings.mean(axis=0).values

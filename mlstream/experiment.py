@@ -22,7 +22,7 @@ class Experiment:
                  static_attributes: List = None, seq_length: int = 10,
                  concat_static: bool = False, no_static: bool = False,
                  cache_data: bool = False, n_jobs: int = 1, seed: int = 0,
-                 run_metadata: Dict = {}):
+                 forcings_file_format: str = 'rvt', run_metadata: Dict = {}):
         """Initializes the experiment.
 
         Parameters
@@ -58,9 +58,12 @@ class Experiment:
             Number of workers to use for training. Default 1
         seed : int, optional
             Seed to use for training. Default 0
+        forcings_file_format : str, optional
+            File format for lumped forcing files. Can be 'csv' or 'rvt' or 'txt'
         run_metadata : dict, optional
             Optional dictionary of values to store in cfg.json for documentation purpose.
         """
+        print ("Sarkara")
         self.model = None
         self.results = {}
 
@@ -77,7 +80,8 @@ class Experiment:
             "concat_static": concat_static,
             "no_static": no_static,
             "seed": seed,
-            "n_jobs": n_jobs
+            "n_jobs": n_jobs,
+            "forcings_file_format": forcings_file_format
         }
         self.cfg.update(run_metadata)
 
@@ -136,7 +140,8 @@ class Experiment:
 
         # create scalers
         input_scalers = InputScaler(self.cfg["data_root"], run_cfg["basins"],
-                                    run_cfg["start_date"], run_cfg["end_date"])
+                                    run_cfg["start_date"], run_cfg["end_date"],
+                                    self.cfg["forcings_file_format"])
         output_scalers = OutputScaler(self.cfg["data_root"], run_cfg["basins"],
                                       run_cfg["start_date"], run_cfg["end_date"])
         static_scalers = {}
@@ -158,6 +163,7 @@ class Experiment:
                                   with_attributes=not run_cfg["no_static"],
                                   concat_static=run_cfg["concat_static"],
                                   db_path=db_path,
+                                  forcings_file_format=self.cfg["forcings_file_format"],
                                   scalers=(input_scalers, output_scalers, static_scalers))
 
             preds, obs = self.predict_basin(ds_test)

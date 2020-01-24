@@ -40,9 +40,11 @@ class LumpedBasin(Dataset):
         If True, loads and returns addtionaly attributes, by default False
     concat_static : bool, optional
         If true, adds catchment characteristics at each time step to the meteorological forcing
-        input data, by default False
+        input data, by default True
     db_path : str, optional
         Path to sqlite3 database file containing the catchment characteristics, by default None
+    forcings_file_format : str, optional
+        File format for lumped forcings files
     scalers : Tuple[InputScaler, OutputScaler, Dict[str, StaticAttributeScaler]], optional
         Scalers to normalize and resale input, output, and static variables. If not provided,
         the scalers will be initialized at runtime, which will result in poor performance if
@@ -58,8 +60,9 @@ class LumpedBasin(Dataset):
                  train_basins: List,
                  seq_length: int,
                  with_attributes: bool = False,
-                 concat_static: bool = False,
+                 concat_static: bool = True,
                  db_path: str = None,
+                 forcings_file_format: str = 'rvt',
                  scalers: Tuple[InputScaler, OutputScaler,
                                 Dict[str, StaticAttributeScaler]] = None):
         self.data_root = data_root
@@ -72,13 +75,14 @@ class LumpedBasin(Dataset):
         self.with_attributes = with_attributes
         self.concat_static = concat_static
         self.db_path = db_path
+        self.forcings_file_format = forcings_file_format
         if scalers is not None:
             self.input_scalers, self.output_scalers, self.static_scalers = scalers
         else:
             self.input_scalers, self.output_scalers, self.static_scalers = None, None, {}
         if self.input_scalers is None:
             self.input_scalers = InputScaler(self.data_root, self.train_basins,
-                                             self.dates[0], self.dates[1])
+                                             self.dates[0], self.dates[1], self.forcings_file_format)
         if self.output_scalers is None:
             self.output_scalers = OutputScaler(self.data_root, self.train_basins,
                                                self.dates[0], self.dates[1])
@@ -91,7 +95,7 @@ class LumpedBasin(Dataset):
         self.period_end = None
         self.attribute_names = None
 
-        self.x, self.y = self._load_data()
+        self.x, self.y = self._load_data(forcings_file_format=self.forcings_file_format)
 
         if self.with_attributes:
             self.attributes = self._load_attributes()
@@ -111,11 +115,11 @@ class LumpedBasin(Dataset):
         else:
             return self.x[idx], self.y[idx]
 
-    def _load_data(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _load_data(self, forcings_file_format: str) -> Tuple[torch.Tensor, torch.Tensor]:
         """Loads input and output data from text files. """
         # we use (seq_len) time steps before start for warmup
 
-        df = load_forcings_lumped(self.data_root, [self.basin])[self.basin]
+        df = load_forcings_lumped(self.data_root, [self.basin], forcings_file_format)[self.basin]
         qobs = load_discharge(self.data_root, basins=[self.basin]).set_index('date')['qobs']
         if not self.is_train and len(qobs) == 0:
             tqdm.write(f"Treating {self.basin} as validation basin (no streamflow data found).")
@@ -197,7 +201,7 @@ class LumpedH5(Dataset):
         Path to sqlite3 database file, containing the catchment characteristics
     concat_static : bool
         If true, adds catchment characteristics at each time step to the meteorological forcing
-        input data, by default False
+        input data, by default True
     cache : bool, optional
         If True, loads the entire data into memory, by default False
     no_static : bool, optional
@@ -208,7 +212,7 @@ class LumpedH5(Dataset):
                  h5_file: Path,
                  basins: List,
                  db_path: str,
-                 concat_static: bool = False,
+                 concat_static: bool = True,
                  cache: bool = False,
                  no_static: bool = False):
         self.h5_file = h5_file

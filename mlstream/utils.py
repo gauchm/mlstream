@@ -20,7 +20,9 @@ def create_h5_files(data_root: Path,
                     basins: List,
                     dates: List,
                     forcing_vars: List,
-                    seq_length: int):
+                    seq_length: int,
+                    forcings_file_format: str,
+                    concat_static: bool = True):
     """Creates H5 training set.
 
     Parameters
@@ -37,6 +39,10 @@ def create_h5_files(data_root: Path,
         Names of forcing variables
     seq_length : int
         Length of the requested input sequences
+    forcings_file_format : str
+        File format of lumped forcings file
+    concat_static : bool
+        If True, will concatenate static basin attributes with forcings for model input. By default True
 
     Raises
     ------
@@ -76,14 +82,19 @@ def create_h5_files(data_root: Path,
 
         scalers = None
         for basin in tqdm(basins, file=sys.stdout):
-            dataset = LumpedBasin(data_root=data_root,
-                                  basin=basin,
-                                  forcing_vars=forcing_vars,
-                                  is_train=True,
-                                  train_basins=basins,
-                                  seq_length=seq_length,
-                                  dates=dates,
-                                  scalers=scalers)
+            try:
+                dataset = LumpedBasin(data_root=data_root,
+                                      basin=basin,
+                                      forcing_vars=forcing_vars,
+                                      is_train=True,
+                                      train_basins=basins,
+                                      seq_length=seq_length,
+                                      dates=dates,
+                                      scalers=scalers,
+                                      forcings_file_format=forcings_file_format)
+            except Exception as e:
+                print ("Sira is sir")
+                continue
             # Reuse scalers across datasets to save computation time
             if scalers is None:
                 scalers = dataset.input_scalers, dataset.output_scalers, dataset.static_scalers
@@ -162,7 +173,9 @@ def prepare_data(cfg: Dict, basins: List) -> Dict:
                     basins=basins,
                     dates=[cfg["start_date"], cfg["end_date"]],
                     forcing_vars=cfg["forcing_attributes"],
-                    seq_length=cfg["seq_length"])
+                    seq_length=cfg["seq_length"],
+                    forcings_file_format=cfg["forcings_file_format"],
+                    concat_static=cfg["concat_static"])
 
     return cfg
 
