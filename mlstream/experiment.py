@@ -223,21 +223,3 @@ class Experiment:
             if not all(pd.isna(df['qobs'])):
                 nses[basin] = nse(df['qsim'].values, df['qobs'].values)
         return nses
-
-    def save_model(self, save_dir: Path):
-        """Saves the model.
-
-        Parameters
-        ----------
-        save_dir : Path
-            Path of the directory to save the model
-
-        Raises
-        ------
-        AttributeError
-            If called before setting a model
-        """
-        if self.model is None:
-            raise AttributeError("Model is not set.")
-        model_path = save_dir / "experiment_model.pt"
-        torch.save(self.model.state_dict(), str(model_path))
