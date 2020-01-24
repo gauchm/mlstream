@@ -63,7 +63,6 @@ class Experiment:
         run_metadata : dict, optional
             Optional dictionary of values to store in cfg.json for documentation purpose.
         """
-        print ("Sarkara")
         self.model = None
         self.results = {}
 
