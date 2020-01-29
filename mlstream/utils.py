@@ -93,7 +93,7 @@ def create_h5_files(data_root: Path,
                                       scalers=scalers,
                                       forcings_file_format=forcings_file_format)
             except Exception as e:
-                print ("Sira is sir")
+                print (f"Couldn't  find data for '{basin}'. Skipping it.")
                 continue
             # Reuse scalers across datasets to save computation time
             if scalers is None:
