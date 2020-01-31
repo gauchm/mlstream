@@ -21,8 +21,7 @@ def create_h5_files(data_root: Path,
                     dates: List,
                     forcing_vars: List,
                     seq_length: int,
-                    forcings_file_format: str,
-                    concat_static: bool = True):
+                    forcings_file_format: str):
     """Creates H5 training set.
 
     Parameters
@@ -83,6 +82,10 @@ def create_h5_files(data_root: Path,
         scalers = None
         for basin in tqdm(basins, file=sys.stdout):
             try:
+                """
+                We only store time-series forcings in the .h5-file, 
+                so we don't need static attributes (with_attributes=False)
+                """
                 dataset = LumpedBasin(data_root=data_root,
                                       basin=basin,
                                       forcing_vars=forcing_vars,
@@ -91,7 +94,8 @@ def create_h5_files(data_root: Path,
                                       seq_length=seq_length,
                                       dates=dates,
                                       scalers=scalers,
-                                      forcings_file_format=forcings_file_format)
+                                      forcings_file_format=forcings_file_format,
+                                      with_attributes=False)
             except Exception as e:
                 print (f"Couldn't  find data for '{basin}'. Skipping it.")
                 continue
@@ -174,8 +178,7 @@ def prepare_data(cfg: Dict, basins: List) -> Dict:
                     dates=[cfg["start_date"], cfg["end_date"]],
                     forcing_vars=cfg["forcing_attributes"],
                     seq_length=cfg["seq_length"],
-                    forcings_file_format=cfg["forcings_file_format"],
-                    concat_static=cfg["concat_static"])
+                    forcings_file_format=cfg["forcings_file_format"])
 
     return cfg
 
