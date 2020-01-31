@@ -75,7 +75,14 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
     found_basins = []
     for f in files:
         q_nc = nc.Dataset(f, 'r')
-        file_basins = q_nc['station_id'][:]
+        """
+        some of the station_ids in the dataset have an extra 0 appended 
+        at the start of the id. Therefore, making two copies of station_ids:
+        one with the original strings and another with the extra 0s removed.
+        The two copies are then used appropriately.
+        """
+        file_basins_og = np.array([f for f in q_nc['station_id'][:]])
+        file_basins = np.array([f[-7:] for f in file_basins_og])
         if basins is not None:
             # some basins might be in multiple NC-files. We only load them once.
             target_basins = [i for i, b in enumerate(file_basins)
@@ -86,7 +93,7 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
         if len(target_basins) > 0:
             time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
             data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
-                                columns=file_basins[target_basins])
+                                columns=file_basins_og[target_basins])
             data = data.unstack().reset_index().rename({'level_0': 'basin',
                                                         'level_1': 'date',
                                                         0: 'qobs'}, axis=1)
@@ -105,36 +112,42 @@ def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str 
     ----------
     data_root : Path
         Path to base data directory, which contains the directory 'forcings/lumped/',
-        which contains one .rvt-file per basin.
+        which contains one .rvt/.csv/.txt -file per basin.
     basins : List, optional
         List of basins for which to return data. Default (None) returns data for all basins.
     file_format : str, optional
-        Format of the forcing files. Default, and currently only supported format is 'rvt'.
+        Format of the forcing files. Default format is 'rvt' but 'csv' is also supported.
 
     Returns
     -------
     dict
         Dictionary of forcings (pd.DataFrame) per basin
     """
-    if file_format != 'rvt':
+    if file_format not in ['rvt', 'csv', 'txt']:
         raise NotImplementedError(f"Forcing format {file_format} not supported.")
 
     lumped_dir = data_root / 'forcings' / 'lumped'
-    basin_files = lumped_dir.glob('*.rvt')
+    basin_files = lumped_dir.glob('*.' + file_format)
 
     basin_forcings = {}
     for f in basin_files:
         basin = f.name.split('_')[-1][:-4]
         if basins is not None and basin not in basins:
             continue
-
-        with open(f) as fp:
-            next(fp)
-            start_date = next(fp)[:10]
-            columns = re.split(r',\s+', next(fp).replace('\n', ''))[1:]
-        data = pd.read_csv(f, sep=r',\s*', skiprows=4, skipfooter=1, names=columns, dtype=float,
-                           header=None, usecols=range(len(columns)), engine='python')
-
+        if file_format == 'rvt':
+            with open(f) as fp:
+                next(fp)
+                start_date = next(fp)[:10]
+                columns = re.split(r',\s+', next(fp).replace('\n', ''))[1:]
+            data = pd.read_csv(f, sep=r',\s*', skiprows=4, skipfooter=1, names=columns, dtype=float,
+                               header=None, usecols=range(len(columns)), engine='python')
+        elif file_format in ['txt', 'csv']:
+            with open(f) as fp:
+                next(fp); next(fp); 
+                columns = re.split(r',\s*', next(fp).replace('\n', ''))[1:]
+                start_date = next(fp)[:10]
+            data = pd.read_csv(f, sep=r',\s*', skiprows=3, skipfooter=1, names=columns, dtype=float, 
+                                            header=None, usecols=range(1, len(columns)+1), engine='python')
         data.index = pd.date_range(start_date, periods=len(data), freq='D')
         basin_forcings[basin] = data
 
@@ -204,7 +217,7 @@ def load_static_attributes(db_path: Path,
 
     # drop lat/lon col
     if drop_lat_lon:
-        df = df.drop(['Lat_outlet', 'Lon_outlet'], axis=1)
+        df = df.drop(['Lat_outlet', 'Lon_outlet'], axis=1, errors='ignore')
 
     # drop invalid attributes
     if keep_features is not None:

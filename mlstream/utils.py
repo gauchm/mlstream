@@ -20,7 +20,8 @@ def create_h5_files(data_root: Path,
                     basins: List,
                     dates: List,
                     forcing_vars: List,
-                    seq_length: int):
+                    seq_length: int,
+                    forcings_file_format: str):
     """Creates H5 training set.
 
     Parameters
@@ -37,6 +38,8 @@ def create_h5_files(data_root: Path,
         Names of forcing variables
     seq_length : int
         Length of the requested input sequences
+    forcings_file_format : str
+        File format of lumped forcings file
 
     Raises
     ------
@@ -76,14 +79,24 @@ def create_h5_files(data_root: Path,
 
         scalers = None
         for basin in tqdm(basins, file=sys.stdout):
-            dataset = LumpedBasin(data_root=data_root,
-                                  basin=basin,
-                                  forcing_vars=forcing_vars,
-                                  is_train=True,
-                                  train_basins=basins,
-                                  seq_length=seq_length,
-                                  dates=dates,
-                                  scalers=scalers)
+            try:
+                """
+                We only store time-series forcings in the .h5-file, 
+                so we don't need static attributes (with_attributes=False)
+                """
+                dataset = LumpedBasin(data_root=data_root,
+                                      basin=basin,
+                                      forcing_vars=forcing_vars,
+                                      is_train=True,
+                                      train_basins=basins,
+                                      seq_length=seq_length,
+                                      dates=dates,
+                                      scalers=scalers,
+                                      forcings_file_format=forcings_file_format,
+                                      with_attributes=False)
+            except Exception as e:
+                print (f"Couldn't  find data for '{basin}'. Skipping it.")
+                continue
             # Reuse scalers across datasets to save computation time
             if scalers is None:
                 scalers = dataset.input_scalers, dataset.output_scalers, dataset.static_scalers
@@ -162,7 +175,8 @@ def prepare_data(cfg: Dict, basins: List) -> Dict:
                     basins=basins,
                     dates=[cfg["start_date"], cfg["end_date"]],
                     forcing_vars=cfg["forcing_attributes"],
-                    seq_length=cfg["seq_length"])
+                    seq_length=cfg["seq_length"],
+                    forcings_file_format=cfg["forcings_file_format"])
 
     return cfg
 
