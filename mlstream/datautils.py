@@ -75,6 +75,12 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
     found_basins = []
     for f in files:
         q_nc = nc.Dataset(f, 'r')
+        """
+        some of the station_ids in the dataset have an extra 0 appended 
+        at the start of the id. Therefore, making two copies of station_ids:
+        one with the original strings and another with the extra 0s removed.
+        The two copies are then used appropriately.
+        """
         file_basins_og = np.array([f for f in q_nc['station_id'][:]])
         file_basins = np.array([f[-7:] for f in file_basins_og])
         if basins is not None:

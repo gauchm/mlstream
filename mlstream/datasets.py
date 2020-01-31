@@ -95,7 +95,7 @@ class LumpedBasin(Dataset):
         self.period_end = None
         self.attribute_names = None
 
-        self.x, self.y = self._load_data(forcings_file_format=self.forcings_file_format)
+        self.x, self.y = self._load_data()
 
         if self.with_attributes:
             self.attributes = self._load_attributes()
@@ -115,11 +115,11 @@ class LumpedBasin(Dataset):
         else:
             return self.x[idx], self.y[idx]
 
-    def _load_data(self, forcings_file_format: str) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _load_data(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Loads input and output data from text files. """
         # we use (seq_len) time steps before start for warmup
 
-        df = load_forcings_lumped(self.data_root, [self.basin], forcings_file_format)[self.basin]
+        df = load_forcings_lumped(self.data_root, [self.basin], self.forcings_file_format)[self.basin]
         qobs = load_discharge(self.data_root, basins=[self.basin]).set_index('date')['qobs']
         if not self.is_train and len(qobs) == 0:
             tqdm.write(f"Treating {self.basin} as validation basin (no streamflow data found).")
