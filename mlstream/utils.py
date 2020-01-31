@@ -40,8 +40,6 @@ def create_h5_files(data_root: Path,
         Length of the requested input sequences
     forcings_file_format : str
         File format of lumped forcings file
-    concat_static : bool
-        If True, will concatenate static basin attributes with forcings for model input. By default True
 
     Raises
     ------
