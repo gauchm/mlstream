@@ -116,8 +116,13 @@ class Experiment:
 
         self.model.train(ds)
 
-    def predict(self) -> Dict:
+    def predict(self, clip_zero: bool = True) -> Dict:
         """Generates predictions with a trained model.
+
+        Parameters
+        ----------
+        clip_zero : bool, default True
+            If True, will clip predictions to values >= 0
 
         Returns
         -------
@@ -165,7 +170,7 @@ class Experiment:
                                   forcings_file_format=self.cfg["forcings_file_format"],
                                   scalers=(input_scalers, output_scalers, static_scalers))
 
-            preds, obs = self.predict_basin(ds_test)
+            preds, obs = self.predict_basin(ds_test, clip_zero=clip_zero)
 
             date_range = pd.date_range(start=self.cfg["start_date"]
                                        + pd.DateOffset(days=run_cfg["seq_length"] - 1),
@@ -177,13 +182,15 @@ class Experiment:
 
         return self.results
 
-    def predict_basin(self, ds: LumpedBasin) -> Tuple[np.ndarray, np.ndarray]:
+    def predict_basin(self, ds: LumpedBasin, clip_zero: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Predicts a single basin.
 
         Parameters
         ----------
         ds : LumpedBasin
             Dataset for the basin to predict
+        clip_zero : bool, default True
+            If True, will clip predictions to values >= 0
 
         Returns
         -------
@@ -194,7 +201,8 @@ class Experiment:
         """
         preds, obs = self.model.predict(ds)
         preds = ds.output_scalers.rescale(preds)
-        preds[preds < 0] = 0
+        if clip_zero:
+            preds[preds < 0] = 0
 
         return preds, obs
 

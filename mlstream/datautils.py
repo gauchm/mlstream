@@ -42,7 +42,7 @@ def get_basin_list(data_root: Path, basin_type: str) -> List:
 
     if 'Gauge_ID' not in gauge_info.columns:
         raise RuntimeError('gauge_info.csv has no column "Gauge_ID".')
-    basins = gauge_info['Gauge_ID'].values
+    basins = gauge_info['Gauge_ID'].str.zfill(8).values
 
     return np.unique(basins).tolist()
 
@@ -75,14 +75,7 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
     found_basins = []
     for f in files:
         q_nc = nc.Dataset(f, 'r')
-        """
-        some of the station_ids in the dataset have an extra 0 appended 
-        at the start of the id. Therefore, making two copies of station_ids:
-        one with the original strings and another with the extra 0s removed.
-        The two copies are then used appropriately.
-        """
-        file_basins_og = np.array([f for f in q_nc['station_id'][:]])
-        file_basins = np.array([f[-7:] for f in file_basins_og])
+        file_basins = np.array([f.zfill(8) for f in q_nc['station_id'][:]])
         if basins is not None:
             # some basins might be in multiple NC-files. We only load them once.
             target_basins = [i for i, b in enumerate(file_basins)
@@ -93,7 +86,7 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
         if len(target_basins) > 0:
             time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
             data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
-                                columns=file_basins_og[target_basins])
+                                columns=file_basins[target_basins])
             data = data.unstack().reset_index().rename({'level_0': 'basin',
                                                         'level_1': 'date',
                                                         0: 'qobs'}, axis=1)
@@ -131,7 +124,7 @@ def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str 
 
     basin_forcings = {}
     for f in basin_files:
-        basin = f.name.split('_')[-1][:-4]
+        basin = f.name.split('_')[-1][:-4].zfill(8)
         if basins is not None and basin not in basins:
             continue
         if file_format == 'rvt':
@@ -173,7 +166,9 @@ def store_static_attributes(data_root: Path, db_path: Path = None, attribute_nam
         If attributes folder can not be found.
     """
     f = data_root / 'gauge_info' / 'gauge_info.csv'
-    gauge_info = pd.read_csv(f).rename({'Gauge_ID': 'basin'}, axis=1).set_index('basin')
+    gauge_info = pd.read_csv(f).rename({'Gauge_ID': 'basin'}, axis=1)
+    gauge_info["basin"] = gauge_info["basin"].str.zfill(8)
+    gauge_info.set_index('basin', inplace=True)
     if attribute_names is not None:
         static_attributes = gauge_info.loc[:, attribute_names]
     else:

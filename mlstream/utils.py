@@ -122,7 +122,7 @@ def create_h5_files(data_root: Path,
             out_f.flush()
 
 
-def store_results(user_cfg: Dict, run_cfg: Dict, results: pd.DataFrame):
+def store_results(user_cfg: Dict, run_cfg: Dict, results: Dict):
     """Stores prediction results in a pickle file.
 
     Parameters
@@ -131,7 +131,7 @@ def store_results(user_cfg: Dict, run_cfg: Dict, results: pd.DataFrame):
         Dictionary containing the user entered evaluation config
     run_cfg : Dict
         Dictionary containing the run config loaded from the cfg.json file
-    results : pd.DataFrame
+    results : Dict
         DataFrame containing the observed and predicted discharge.
     """
     if run_cfg["no_static"]:
