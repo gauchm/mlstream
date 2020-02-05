@@ -110,6 +110,10 @@ def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str 
         List of basins for which to return data. Default (None) returns data for all basins.
     file_format : str, optional
         Format of the forcing files. Default format is 'rvt' but 'csv' is also supported.
+        - rvt format: fourth line contains column names (",\s+"-sepatated), following lines contain ",\s*"-separated
+            data. Second line starts with start date (yyyy-mm-dd). Last line is footer.
+        - txt/csv format: first line is header, following lines are comma-separated. First column contains dates
+            as yyyy-mm-dd.
 
     Returns
     -------
@@ -136,11 +140,9 @@ def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str 
                                header=None, usecols=range(len(columns)), engine='python')
         elif file_format in ['txt', 'csv']:
             with open(f) as fp:
-                next(fp); next(fp); 
-                columns = re.split(r',\s*', next(fp).replace('\n', ''))[1:]
+                columns = re.split(',', next(fp).replace('\n', ''))[1:]
                 start_date = next(fp)[:10]
-            data = pd.read_csv(f, sep=r',\s*', skiprows=3, skipfooter=1, names=columns, dtype=float, 
-                                            header=None, usecols=range(1, len(columns)+1), engine='python')
+            data = pd.read_csv(f, dtype=float, usecols=range(1, len(columns)+1))
         data.index = pd.date_range(start_date, periods=len(data), freq='D')
         basin_forcings[basin] = data
 
