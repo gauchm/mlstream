@@ -82,7 +82,9 @@ class LumpedBasin(Dataset):
             self.input_scalers, self.output_scalers, self.static_scalers = None, None, {}
         if self.input_scalers is None:
             self.input_scalers = InputScaler(self.data_root, self.train_basins,
-                                             self.dates[0], self.dates[1], self.forcings_file_format)
+                                             self.dates[0], self.dates[1],
+                                             self.forcing_vars,
+                                             self.forcings_file_format)
         if self.output_scalers is None:
             self.output_scalers = OutputScaler(self.data_root, self.train_basins,
                                                self.dates[0], self.dates[1])

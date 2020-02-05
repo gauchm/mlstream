@@ -145,7 +145,8 @@ class Experiment:
         # create scalers
         input_scalers = InputScaler(self.cfg["data_root"], run_cfg["basins"],
                                     run_cfg["start_date"], run_cfg["end_date"],
-                                    self.cfg["forcings_file_format"])
+                                    run_cfg["forcing_attributes"],
+                                    run_cfg["forcings_file_format"])
         output_scalers = OutputScaler(self.cfg["data_root"], run_cfg["basins"],
                                       run_cfg["start_date"], run_cfg["end_date"])
         static_scalers = {}
@@ -167,7 +168,7 @@ class Experiment:
                                   with_attributes=not run_cfg["no_static"],
                                   concat_static=run_cfg["concat_static"],
                                   db_path=db_path,
-                                  forcings_file_format=self.cfg["forcings_file_format"],
+                                  forcings_file_format=run_cfg["forcings_file_format"],
                                   scalers=(input_scalers, output_scalers, static_scalers))
 
             preds, obs = self.predict_basin(ds_test, clip_zero=clip_zero)
