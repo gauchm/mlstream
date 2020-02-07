@@ -79,23 +79,18 @@ def create_h5_files(data_root: Path,
 
         scalers = None
         for basin in tqdm(basins, file=sys.stdout):
-            try:
-                """
-                We only store time-series forcings in the .h5-file, 
-                so we don't need static attributes (with_attributes=False)
-                """
-                dataset = LumpedBasin(data_root=data_root,
-                                      basin=basin,
-                                      forcing_vars=forcing_vars,
-                                      is_train=True,
-                                      train_basins=basins,
-                                      seq_length=seq_length,
-                                      dates=dates,
-                                      scalers=scalers,
-                                      forcings_file_format=forcings_file_format,
-                                      with_attributes=False)
-            except Exception as e:
-                print (f"Couldn't  find data for '{basin}'. Skipping it.")
+            dataset = LumpedBasin(data_root=data_root,
+                                  basin=basin,
+                                  forcing_vars=forcing_vars,
+                                  is_train=True,
+                                  train_basins=basins,
+                                  seq_length=seq_length,
+                                  dates=dates,
+                                  scalers=scalers,
+                                  forcings_file_format=forcings_file_format,
+                                  with_attributes=False)
+            if len(dataset) == 0:
+                print (f"No data for basin {basin}. Skipping it.")
                 continue
             # Reuse scalers across datasets to save computation time
             if scalers is None:

@@ -5,4 +5,3 @@ mlstream
    :maxdepth: 4
 
    mlstream
-   setup
