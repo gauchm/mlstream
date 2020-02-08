@@ -8,7 +8,7 @@ def readme():
 
 
 setup(name='mlstream',
-      version='0.1',
+      version='0.1.1',
       description='Machine learning for streamflow prediction',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -20,7 +20,6 @@ setup(name='mlstream',
       packages=['mlstream', 'mlstream.models'],
       install_requires=[
           'torch',
-          'scikit-learn',
           'pandas',
           'numpy',
           'h5py',
@@ -28,7 +27,6 @@ setup(name='mlstream',
           'netCDF4',
           'numba',
           'scipy',
-          'xgboost'
       ],
       include_package_data=True,
       zip_safe=False)

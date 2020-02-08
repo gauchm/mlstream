@@ -4,10 +4,8 @@ pandas
 sphinx
 sphinx_rtd_theme
 numba
-torch
 pandoc
 h5py
 tqdm
 netCDF4
 scikit-learn
-xgboost
