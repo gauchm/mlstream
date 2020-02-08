@@ -1,9 +1,9 @@
 from setuptools import setup
-from os import path
+import os
 
 
 def readme():
-    with open(path.dirname(path.realpath(__file__)) + '/README.md') as f:
+    with open(os.path.dirname(os.path.realpath(__file__)) + '/README.md') as f:
         return f.read()
 
 requires = [
