@@ -6,6 +6,20 @@ def readme():
     with open(path.dirname(path.realpath(__file__)) + '/README.md') as f:
         return f.read()
 
+requires = [
+    'pandas',
+    'numpy',
+    'h5py',
+    'tqdm',
+    'netCDF4',
+    'numba',
+    'scipy',
+],
+
+# to save build resources, we mock torch and xgboost while building the docs
+if not os.getenv('READTHEDOCS'):
+  requires.append('torch')
+  requires.append('xgboost')
 
 setup(name='mlstream',
       version='0.1.1',
@@ -18,15 +32,6 @@ setup(name='mlstream',
       author_email='martin.gauch@uwaterloo.ca',
       license='Apache-2.0',
       packages=['mlstream', 'mlstream.models'],
-      install_requires=[
-          'torch',
-          'pandas',
-          'numpy',
-          'h5py',
-          'tqdm',
-          'netCDF4',
-          'numba',
-          'scipy',
-      ],
+      install_requires=requires,
       include_package_data=True,
       zip_safe=False)
