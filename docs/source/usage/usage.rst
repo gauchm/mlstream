@@ -54,7 +54,11 @@ names as ``:Parameters, <col1>, <col2>, ..., <colN>``.
 Training
 --------
 For training, create an :python:`Experiment` with the path to the data folder, specify a run directory
-to store results, start and end date, the training basins, and forcing and static basin attributes.
+to store results, start and end date, the training basins, forcing and static basin attributes, and
+input sequence length.
+Further, you can specify if the target to predict can take negative values (:python:`allow_negative_target=True`).
+E.g., when you predict discharge, this should be :python:`False`, but when you predict the error of another model's
+discharge prediction, it should be :python:`True` (since the other model can be off in both directions).
 Then, set the model to use for training, and start training with :python:`exp.train()`:
 
 .. code-block:: python
@@ -64,8 +68,10 @@ Then, set the model to use for training, and start training with :python:`exp.tr
   exp = Experiment(data_path, is_train=True, run_dir=run_dir,
                    start_date='01012000', end_date='31122015',
                    basins=['00AAA123', '00AAB234', '00AAC567'],
-                   forcing_attributes=['precip', 'tmax', 'tmin'],
+                   seq_length=100, concat_static=True,
                    static_attributes=['area', 'regulation'],
+                   forcing_attributes=['precip', 'tmax', 'tmin'],
+                   allow_negative_target=False,
                    forcings_file_format='csv')
   exp.set_model(model)
   exp.train()
@@ -79,6 +85,8 @@ Inference
 To run inference after training, create a new :python:`Experiment` with :python:`is_train = False`,
 provide the data path, the path to the run directory from training, the test basins,
 and start and end date.
+There is no need to specify sequence length, forcing and static attributes, or `allow_negative_target`
+again; instead, these values are loaded from the configuration file in the run directory.
 Load and set the trained model (which was saved in the run directory during training),
 and run predictions with :python:`exp.predict()`, which will return a DataFrame of predictions.
 

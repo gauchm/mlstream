@@ -21,6 +21,7 @@ def create_h5_files(data_root: Path,
                     dates: List,
                     forcing_vars: List,
                     seq_length: int,
+                    allow_negative_target: bool,
                     forcings_file_format: str):
     """Creates H5 training set.
 
@@ -38,6 +39,8 @@ def create_h5_files(data_root: Path,
         Names of forcing variables
     seq_length : int
         Length of the requested input sequences
+    allow_negative_target : bool, optional
+        If False, will remove samples with negative target value from the dataset.
     forcings_file_format : str
         File format of lumped forcings file
 
@@ -88,6 +91,7 @@ def create_h5_files(data_root: Path,
                                   dates=dates,
                                   scalers=scalers,
                                   forcings_file_format=forcings_file_format,
+                                  allow_negative_target=allow_negative_target,
                                   with_attributes=False)
             if len(dataset) == 0:
                 print (f"No data for basin {basin}. Skipping it.")
@@ -171,6 +175,7 @@ def prepare_data(cfg: Dict, basins: List) -> Dict:
                     dates=[cfg["start_date"], cfg["end_date"]],
                     forcing_vars=cfg["forcing_attributes"],
                     seq_length=cfg["seq_length"],
+                    allow_negative_target=cfg["allow_negative_target"],
                     forcings_file_format=cfg["forcings_file_format"])
 
     return cfg

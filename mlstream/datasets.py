@@ -45,6 +45,8 @@ class LumpedBasin(Dataset):
         Path to sqlite3 database file containing the catchment characteristics, by default None
     forcings_file_format : str, optional
         File format for lumped forcings files
+    allow_negative_target : bool, optional
+        If False, will remove samples with negative target value from the dataset.
     scalers : Tuple[InputScaler, OutputScaler, Dict[str, StaticAttributeScaler]], optional
         Scalers to normalize and resale input, output, and static variables. If not provided,
         the scalers will be initialized at runtime, which will result in poor performance if
@@ -63,6 +65,7 @@ class LumpedBasin(Dataset):
                  concat_static: bool = True,
                  db_path: str = None,
                  forcings_file_format: str = 'rvt',
+                 allow_negative_target: bool = False,
                  scalers: Tuple[InputScaler, OutputScaler,
                                 Dict[str, StaticAttributeScaler]] = None):
         self.data_root = data_root
@@ -76,6 +79,7 @@ class LumpedBasin(Dataset):
         self.concat_static = concat_static
         self.db_path = db_path
         self.forcings_file_format = forcings_file_format
+        self.allow_negative_target = allow_negative_target
         if scalers is not None:
             self.input_scalers, self.output_scalers, self.static_scalers = scalers
         else:
@@ -156,8 +160,9 @@ class LumpedBasin(Dataset):
                 y = np.delete(y, np.argwhere(np.isnan(y)), axis=0)
 
             # Deletes all records with invalid discharge
-            x = np.delete(x, np.argwhere(y < 0)[:, 0], axis=0)
-            y = np.delete(y, np.argwhere(y < 0)[:, 0], axis=0)
+            if not self.allow_negative_target:
+                x = np.delete(x, np.argwhere(y < 0)[:, 0], axis=0)
+                y = np.delete(y, np.argwhere(y < 0)[:, 0], axis=0)
 
             # store std of discharge before normalization
             self.q_std = np.std(y)

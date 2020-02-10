@@ -14,7 +14,7 @@ requires = [
     'netCDF4',
     'numba',
     'scipy',
-],
+]
 
 # to save build resources, we mock torch and xgboost while building the docs
 if not os.getenv('READTHEDOCS'):

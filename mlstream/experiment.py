@@ -22,7 +22,9 @@ class Experiment:
                  static_attributes: List = None, seq_length: int = 10,
                  concat_static: bool = False, no_static: bool = False,
                  cache_data: bool = False, n_jobs: int = 1, seed: int = 0,
-                 forcings_file_format: str = 'rvt', run_metadata: Dict = {}):
+                 allow_negative_target: bool = False,
+                 forcings_file_format: str = 'rvt',
+                 run_metadata: Dict = {}):
         """Initializes the experiment.
 
         Parameters
@@ -58,6 +60,10 @@ class Experiment:
             Number of workers to use for training. Default 1
         seed : int, optional
             Seed to use for training. Default 0
+        allow_negative_target : bool, optional
+            If False, will ignore training samples with negative target value from the dataset, and will
+            clip predictions to values >= 0. This value should be False when predicting discharge, but True
+            when predicting values that can be negative.
         forcings_file_format : str, optional
             File format for lumped forcing files. Can be 'csv' or 'rvt' or 'txt'
         run_metadata : dict, optional
@@ -80,7 +86,8 @@ class Experiment:
             "no_static": no_static,
             "seed": seed,
             "n_jobs": n_jobs,
-            "forcings_file_format": forcings_file_format
+            "forcings_file_format": forcings_file_format,
+            "allow_negative_target": allow_negative_target
         }
         self.cfg.update(run_metadata)
 
@@ -116,13 +123,8 @@ class Experiment:
 
         self.model.train(ds)
 
-    def predict(self, clip_zero: bool = True) -> Dict:
+    def predict(self) -> Dict:
         """Generates predictions with a trained model.
-
-        Parameters
-        ----------
-        clip_zero : bool, default True
-            If True, will clip predictions to values >= 0
 
         Returns
         -------
@@ -168,10 +170,11 @@ class Experiment:
                                   with_attributes=not run_cfg["no_static"],
                                   concat_static=run_cfg["concat_static"],
                                   db_path=db_path,
+                                  allow_negative_target=run_cfg["allow_negative_target"],
                                   forcings_file_format=run_cfg["forcings_file_format"],
                                   scalers=(input_scalers, output_scalers, static_scalers))
 
-            preds, obs = self.predict_basin(ds_test, clip_zero=clip_zero)
+            preds, obs = self.predict_basin(ds_test, clip_zero=run_cfg["allow_negative_target"])
 
             date_range = pd.date_range(start=self.cfg["start_date"]
                                        + pd.DateOffset(days=run_cfg["seq_length"] - 1),
