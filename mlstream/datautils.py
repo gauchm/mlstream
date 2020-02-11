@@ -183,7 +183,7 @@ def store_static_attributes(data_root: Path, db_path: Path = None, attribute_nam
         # insert into databse
         static_attributes.to_sql('basin_attributes', conn)
 
-    print(f"Sucessfully stored basin attributes in {db_path}.")
+    print(f"Successfully stored basin attributes in {db_path}.")
 
 
 def load_static_attributes(db_path: Path,

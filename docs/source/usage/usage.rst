@@ -85,7 +85,7 @@ Inference
 To run inference after training, create a new :python:`Experiment` with :python:`is_train = False`,
 provide the data path, the path to the run directory from training, the test basins,
 and start and end date.
-There is no need to specify sequence length, forcing and static attributes, or `allow_negative_target`
+There is no need to specify sequence length, forcing and static attributes, or :python:`allow_negative_target`
 again; instead, these values are loaded from the configuration file in the run directory.
 Load and set the trained model (which was saved in the run directory during training),
 and run predictions with :python:`exp.predict()`, which will return a DataFrame of predictions.

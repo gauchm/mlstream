@@ -161,6 +161,7 @@ class LumpedBasin(Dataset):
 
             # Deletes all records with invalid discharge
             if not self.allow_negative_target:
+                tqdm.write(f"Deleted {np.sum(np.argwhere(y < 0))} NaNs in basin {self.basin}.")
                 x = np.delete(x, np.argwhere(y < 0)[:, 0], axis=0)
                 y = np.delete(y, np.argwhere(y < 0)[:, 0], axis=0)
 

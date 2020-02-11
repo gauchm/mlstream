@@ -174,7 +174,7 @@ class Experiment:
                                   forcings_file_format=run_cfg["forcings_file_format"],
                                   scalers=(input_scalers, output_scalers, static_scalers))
 
-            preds, obs = self.predict_basin(ds_test, clip_zero=run_cfg["allow_negative_target"])
+            preds, obs = self.predict_basin(ds_test, allow_negative_target=run_cfg["allow_negative_target"])
 
             date_range = pd.date_range(start=self.cfg["start_date"]
                                        + pd.DateOffset(days=run_cfg["seq_length"] - 1),
@@ -186,15 +186,15 @@ class Experiment:
 
         return self.results
 
-    def predict_basin(self, ds: LumpedBasin, clip_zero: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    def predict_basin(self, ds: LumpedBasin, allow_negative_target: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         """Predicts a single basin.
 
         Parameters
         ----------
         ds : LumpedBasin
             Dataset for the basin to predict
-        clip_zero : bool, default True
-            If True, will clip predictions to values >= 0
+        allow_negative_target : bool, default False
+            If False, will clip predictions to values >= 0
 
         Returns
         -------
@@ -205,7 +205,7 @@ class Experiment:
         """
         preds, obs = self.model.predict(ds)
         preds = ds.output_scalers.rescale(preds)
-        if clip_zero:
+        if not allow_negative_target:
             preds[preds < 0] = 0
 
         return preds, obs
