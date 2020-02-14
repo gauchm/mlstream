@@ -23,7 +23,6 @@ class Experiment:
                  concat_static: bool = False, no_static: bool = False,
                  cache_data: bool = False, n_jobs: int = 1, seed: int = 0,
                  allow_negative_target: bool = False,
-                 forcings_file_format: str = 'rvt',
                  run_metadata: Dict = {}):
         """Initializes the experiment.
 
@@ -64,8 +63,6 @@ class Experiment:
             If False, will ignore training samples with negative target value from the dataset, and will
             clip predictions to values >= 0. This value should be False when predicting discharge, but True
             when predicting values that can be negative.
-        forcings_file_format : str, optional
-            File format for lumped forcing files. Can be 'csv' or 'rvt' or 'txt'
         run_metadata : dict, optional
             Optional dictionary of values to store in cfg.json for documentation purpose.
         """
@@ -86,7 +83,6 @@ class Experiment:
             "no_static": no_static,
             "seed": seed,
             "n_jobs": n_jobs,
-            "forcings_file_format": forcings_file_format,
             "allow_negative_target": allow_negative_target
         }
         self.cfg.update(run_metadata)
@@ -147,8 +143,7 @@ class Experiment:
         # create scalers
         input_scalers = InputScaler(self.cfg["data_root"], run_cfg["basins"],
                                     run_cfg["start_date"], run_cfg["end_date"],
-                                    run_cfg["forcing_attributes"],
-                                    run_cfg["forcings_file_format"])
+                                    run_cfg["forcing_attributes"])
         output_scalers = OutputScaler(self.cfg["data_root"], run_cfg["basins"],
                                       run_cfg["start_date"], run_cfg["end_date"])
         static_scalers = {}
@@ -171,7 +166,6 @@ class Experiment:
                                   concat_static=run_cfg["concat_static"],
                                   db_path=db_path,
                                   allow_negative_target=run_cfg["allow_negative_target"],
-                                  forcings_file_format=run_cfg["forcings_file_format"],
                                   scalers=(input_scalers, output_scalers, static_scalers))
 
             preds, obs = self.predict_basin(ds_test, allow_negative_target=run_cfg["allow_negative_target"])

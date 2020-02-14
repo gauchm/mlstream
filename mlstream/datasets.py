@@ -43,8 +43,6 @@ class LumpedBasin(Dataset):
         input data, by default True
     db_path : str, optional
         Path to sqlite3 database file containing the catchment characteristics, by default None
-    forcings_file_format : str, optional
-        File format for lumped forcings files
     allow_negative_target : bool, optional
         If False, will remove samples with negative target value from the dataset.
     scalers : Tuple[InputScaler, OutputScaler, Dict[str, StaticAttributeScaler]], optional
@@ -64,7 +62,6 @@ class LumpedBasin(Dataset):
                  with_attributes: bool = False,
                  concat_static: bool = True,
                  db_path: str = None,
-                 forcings_file_format: str = 'rvt',
                  allow_negative_target: bool = False,
                  scalers: Tuple[InputScaler, OutputScaler,
                                 Dict[str, StaticAttributeScaler]] = None):
@@ -78,7 +75,6 @@ class LumpedBasin(Dataset):
         self.with_attributes = with_attributes
         self.concat_static = concat_static
         self.db_path = db_path
-        self.forcings_file_format = forcings_file_format
         self.allow_negative_target = allow_negative_target
         if scalers is not None:
             self.input_scalers, self.output_scalers, self.static_scalers = scalers
@@ -87,8 +83,7 @@ class LumpedBasin(Dataset):
         if self.input_scalers is None:
             self.input_scalers = InputScaler(self.data_root, self.train_basins,
                                              self.dates[0], self.dates[1],
-                                             self.forcing_vars,
-                                             self.forcings_file_format)
+                                             self.forcing_vars)
         if self.output_scalers is None:
             self.output_scalers = OutputScaler(self.data_root, self.train_basins,
                                                self.dates[0], self.dates[1])
@@ -125,7 +120,7 @@ class LumpedBasin(Dataset):
         """Loads input and output data from text files. """
         # we use (seq_len) time steps before start for warmup
 
-        df = load_forcings_lumped(self.data_root, [self.basin], self.forcings_file_format)[self.basin]
+        df = load_forcings_lumped(self.data_root, [self.basin])[self.basin]
         qobs = load_discharge(self.data_root, basins=[self.basin]).set_index('date')['qobs']
         if not self.is_train and len(qobs) == 0:
             tqdm.write(f"Treating {self.basin} as validation basin (no streamflow data found).")
