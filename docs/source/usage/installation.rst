@@ -6,6 +6,6 @@ This project is available on PyPI: https://pypi.org/project/mlstream/
 
   pip install mlstream
 
-If you want to use the :python:``LumpedXGBoost`` model from
-:python:``mlstream.models.xgboost``, you need to separately install the optional
+If you want to use the :python:`LumpedXGBoost` model from
+:python:`mlstream.models.xgboost`, you need to separately install the optional
 dependency ``xgboost``.

@@ -8,7 +8,7 @@ Welcome to mlstream's documentation!
 
 Machine learning for streamflow prediction.
 
-PyPI: https://pypi.org/project/mlstream/
+PyPI: https://pypi.org/project/mlstream
 GitHub: https://github.com/gauchm/mlstream
 
 .. toctree::
