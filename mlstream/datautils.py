@@ -64,7 +64,7 @@ def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
         A DataFrame with columns [date, basin, qobs], where 'qobs' contains the streamflow.
     """
     discharge_dir = data_root / 'discharge'
-    files = discharge_dir.glob('*')
+    files = [f for f in discharge_dir.glob('*') if f.is_file()]
 
     data_streamflow = pd.DataFrame(columns=['date', 'basin', 'qobs'])
     found_basins = []
@@ -117,7 +117,7 @@ def load_forcings_lumped(data_root: Path, basins: List = None) -> Dict:
         Dictionary of forcings (pd.DataFrame) per basin
     """
     lumped_dir = data_root / 'forcings' / 'lumped'
-    basin_files = lumped_dir.glob('*')
+    basin_files = [f for f in lumped_dir.glob('*') if f.is_file()]
 
     basin_forcings = {}
     for f in basin_files:
