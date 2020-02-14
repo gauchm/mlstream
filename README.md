@@ -19,8 +19,7 @@ exp = Experiment(data_path, is_train=True, run_dir=run_dir,
                  start_date='01012000', end_date='31122015',
                  basins=train_basin_ids, 
                  forcing_attributes=['precip', 'tmax', 'tmin'],
-                 static_attributes=['area', 'regulation'],
-                 forcings_file_format='csv')
+                 static_attributes=['area', 'regulation'])
 
 exp.set_model(model)
 exp.train()

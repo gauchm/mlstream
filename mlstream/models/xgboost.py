@@ -4,9 +4,13 @@ import pickle
 
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 from sklearn.model_selection import RandomizedSearchCV
 from torch.utils.data import DataLoader
+try:
+    import xgboost as xgb
+except ImportError:
+    print("Importing the optional dependency xgboost failed, but required to train an XGBoost model.")
+    raise
 
 from ..datasets import LumpedBasin, LumpedH5
 from .base_models import LumpedModel

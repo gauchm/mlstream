@@ -19,10 +19,9 @@ requires = [
 # to save build resources, we mock torch and xgboost while building the docs
 if not os.getenv('READTHEDOCS'):
   requires.append('torch')
-  requires.append('xgboost')
 
 setup(name='mlstream',
-      version='0.1.1',
+      version='0.1.2',
       description='Machine learning for streamflow prediction',
       long_description=readme(),
       long_description_content_type='text/markdown',

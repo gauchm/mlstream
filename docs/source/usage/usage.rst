@@ -71,8 +71,7 @@ Then, set the model to use for training, and start training with :python:`exp.tr
                    seq_length=100, concat_static=True,
                    static_attributes=['area', 'regulation'],
                    forcing_attributes=['precip', 'tmax', 'tmin'],
-                   allow_negative_target=False,
-                   forcings_file_format='csv')
+                   allow_negative_target=False)
   exp.set_model(model)
   exp.train()
 
