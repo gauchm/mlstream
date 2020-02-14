@@ -47,7 +47,7 @@ def get_basin_list(data_root: Path, basin_type: str) -> List:
     return np.unique(basins).tolist()
 
 
-def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc') -> pd.DataFrame:
+def load_discharge(data_root: Path, basins: List = None) -> pd.DataFrame:
     """Loads observed discharge for (calibration) gauging stations.
 
     Parameters
@@ -57,48 +57,50 @@ def load_discharge(data_root: Path, basins: List = None, file_format: str = 'nc'
         with one or more nc-files.
     basins : List, optional
         List of basins for which to return data. If None (default), all basins are returned
-    file_format : str, optional
-        Format of the discharge files. Default, and currently only supported format is 'nc'.
 
     Returns
     -------
     pd.DataFrame
         A DataFrame with columns [date, basin, qobs], where 'qobs' contains the streamflow.
     """
-    if file_format != 'nc':
-        raise NotImplementedError(f"Discharge format {file_format} not supported.")
-
     discharge_dir = data_root / 'discharge'
-    files = discharge_dir.glob('*.nc')
+    files = [f for f in discharge_dir.glob('*') if f.is_file()]
 
     data_streamflow = pd.DataFrame(columns=['date', 'basin', 'qobs'])
     found_basins = []
     for f in files:
-        q_nc = nc.Dataset(f, 'r')
-        file_basins = np.array([f.zfill(8) for f in q_nc['station_id'][:]])
-        if basins is not None:
-            # some basins might be in multiple NC-files. We only load them once.
-            target_basins = [i for i, b in enumerate(file_basins)
-                             if b in basins and b not in found_basins]
-        else:
-            target_basins = [i for i, b in enumerate(file_basins)
-                             if b not in found_basins]
-        if len(target_basins) > 0:
-            time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
-            data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
-                                columns=file_basins[target_basins])
-            data = data.unstack().reset_index().rename({'level_0': 'basin',
-                                                        'level_1': 'date',
-                                                        0: 'qobs'}, axis=1)
-            found_basins += data['basin'].unique().tolist()
-            data_streamflow = data_streamflow.append(data, ignore_index=True, sort=True)
+        try:
+            file_format = f.name.split(".")[-1]
+            if file_format == "nc":
+                q_nc = nc.Dataset(f, 'r')
+                file_basins = np.array([f.zfill(8) for f in q_nc['station_id'][:]])
+                if basins is not None:
+                    # some basins might be in multiple NC-files. We only load them once.
+                    target_basins = [i for i, b in enumerate(file_basins)
+                                     if b in basins and b not in found_basins]
+                else:
+                    target_basins = [i for i, b in enumerate(file_basins)
+                                     if b not in found_basins]
+                if len(target_basins) > 0:
+                    time = nc.num2date(q_nc['time'][:], q_nc['time'].units, q_nc['time'].calendar)
+                    data = pd.DataFrame(q_nc['Q'][target_basins, :].T, index=time,
+                                        columns=file_basins[target_basins])
+                    data = data.unstack().reset_index().rename({'level_0': 'basin',
+                                                                'level_1': 'date',
+                                                                0: 'qobs'}, axis=1)
+                    found_basins += data['basin'].unique().tolist()
+                    data_streamflow = data_streamflow.append(data, ignore_index=True, sort=True)
 
-        q_nc.close()
+                q_nc.close()
+            else:
+                raise NotImplementedError(f"Discharge format {file_format} not supported.")
+        except Exception as e:
+            print (f"Couldn't load discharge from {f.name}. Skipping ...")
 
     return data_streamflow
 
 
-def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str = 'rvt') -> Dict:
+def load_forcings_lumped(data_root: Path, basins: List = None) -> Dict:
     """Loads basin-lumped forcings.
 
     Parameters
@@ -108,43 +110,40 @@ def load_forcings_lumped(data_root: Path, basins: List = None, file_format: str 
         which contains one .rvt/.csv/.txt -file per basin.
     basins : List, optional
         List of basins for which to return data. Default (None) returns data for all basins.
-    file_format : str, optional
-        Format of the forcing files. Default format is 'rvt' but 'csv' is also supported.
-        - rvt format: fourth line contains column names (",\s+"-sepatated), following lines contain ",\s*"-separated
-            data. Second line starts with start date (yyyy-mm-dd). Last line is footer.
-        - txt/csv format: first line is header, following lines are comma-separated. First column contains dates
-            as yyyy-mm-dd.
 
     Returns
     -------
     dict
         Dictionary of forcings (pd.DataFrame) per basin
     """
-    if file_format not in ['rvt', 'csv', 'txt']:
-        raise NotImplementedError(f"Forcing format {file_format} not supported.")
-
     lumped_dir = data_root / 'forcings' / 'lumped'
-    basin_files = lumped_dir.glob('*.' + file_format)
+    basin_files = [f for f in lumped_dir.glob('*') if f.is_file()]
 
     basin_forcings = {}
     for f in basin_files:
-        basin = f.name.split('_')[-1][:-4].zfill(8)
-        if basins is not None and basin not in basins:
-            continue
-        if file_format == 'rvt':
-            with open(f) as fp:
-                next(fp)
-                start_date = next(fp)[:10]
-                columns = re.split(r',\s+', next(fp).replace('\n', ''))[1:]
-            data = pd.read_csv(f, sep=r',\s*', skiprows=4, skipfooter=1, names=columns, dtype=float,
-                               header=None, usecols=range(len(columns)), engine='python')
-        elif file_format in ['txt', 'csv']:
-            with open(f) as fp:
-                columns = re.split(',', next(fp).replace('\n', ''))[1:]
-                start_date = next(fp)[:10]
-            data = pd.read_csv(f, dtype=float, usecols=range(1, len(columns)+1))
-        data.index = pd.date_range(start_date, periods=len(data), freq='D')
-        basin_forcings[basin] = data
+        try:
+            basin = f.name.split('_')[-1][:-4].zfill(8)
+            file_format = f.name.split(".")[-1]
+            if basins is not None and basin not in basins:
+                continue
+            if file_format == 'rvt':
+                with open(f) as fp:
+                    next(fp)
+                    start_date = next(fp)[:10]
+                    columns = re.split(r',\s+', next(fp).replace('\n', ''))[1:]
+                data = pd.read_csv(f, sep=r',\s*', skiprows=4, skipfooter=1, names=columns, dtype=float,
+                                   header=None, usecols=range(len(columns)), engine='python')
+            elif file_format in ['txt', 'csv']:
+                with open(f) as fp:
+                    columns = re.split(',', next(fp).replace('\n', ''))[1:]
+                    start_date = next(fp)[:10]
+                data = pd.read_csv(f, dtype=float, usecols=range(1, len(columns)+1))
+            else:
+                raise NotImplementedError(f"Forcing format {file_format} not supported.")
+            data.index = pd.date_range(start_date, periods=len(data), freq='D')
+            basin_forcings[basin] = data
+        except Exception as e:
+            print (f"Couldn't load lumped forcings from {f.name}. Skipping ...")
 
     return basin_forcings
 

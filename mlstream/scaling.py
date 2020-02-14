@@ -25,13 +25,12 @@ class InputScaler(Scaler):
 
     def __init__(self, data_root: Path, basins: List,
                  start_date: pd.Timestamp, end_date: pd.Timestamp,
-                 forcing_vars: List = None,
-                 forcings_file_format: str = 'rvt'):
+                 forcing_vars: List = None):
         super().__init__()
 
         all_forcings = pd.DataFrame()
         print("Loading forcings for input scaler.")
-        basin_forcings = load_forcings_lumped(data_root, basins, forcings_file_format)
+        basin_forcings = load_forcings_lumped(data_root, basins)
         for basin, forcing in basin_forcings.items():
             if forcing_vars is not None:
                 all_forcings = all_forcings.append(forcing.loc[start_date:end_date, forcing_vars])
